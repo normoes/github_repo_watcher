@@ -1,0 +1,22 @@
+{
+    "dev": {
+        "project_name": "github-repo-wat",
+        "runtime": "python3.6",
+        "s3_bucket": "github.watcher",
+        "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
+        "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
+        "log_level": "INFO", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
+        "aws_kms_key_arn": "arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d",
+        "aws_region": "eu-west-1",
+        "events": [{
+           "function": "git_watcher.check_repos",
+           "expression": "rate(1 hour)" 
+       }],
+       "keep_warm": true, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
+       "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
+       "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
+       "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
+       "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
+       "debug": false // Print Zappa configuration errors tracebacks in the 500. Default true.
+    }
+}
