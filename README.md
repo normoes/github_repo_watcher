@@ -29,7 +29,7 @@ Initialise database when working locally
 # start postgres
 docker run -d --name db -p 5432:5432 postgres:alpine
 # create test table
-docker run --rm -it postgres:alpine sh  # or docker exec -it db sh
+docker run --rm -it --net=host postgres:alpine sh  # or docker exec -it db sh
 # within the container
 $ psql -h localhost -Upostgres
 # within postgres
@@ -67,6 +67,8 @@ zappa init
 # customize the settings to your needs
 vim zappa_settings.json
 # deploy, environemnt is called "dev" in this case
+aws-vault-css-sideprojects -- zappa deploy dev
+or
 aws-vault-css-sideprojects -- zappa update dev
 ```
 
