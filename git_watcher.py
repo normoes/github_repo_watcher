@@ -417,11 +417,11 @@ def check_repos(event, context):
     )
     repos = (
         ("monero-project/monero", (monero_mattermost_trigger, monero_dockercloud_trigger, )),
-        # ("aeonix/aeon", None),
-        # ("bitcoin/bitcoin", None),
-        # ("python/black", None),
-        # ("antonbabenko/pre-commit-terraform", None),
-        # ("pre-commit/pre-commit-hooks", None),
+        ("aeonix/aeon", None),
+        ("bitcoin/bitcoin", None),
+        ("python/black", None),
+        ("antonbabenko/pre-commit-terraform", None),
+        ("pre-commit/pre-commit-hooks", None),
     )
     for repo, webhooks in repos:
         log.info("Checking: " + f"{repo}")
