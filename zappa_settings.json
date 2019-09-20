@@ -10,7 +10,7 @@
         "aws_region": "eu-west-1",
         "events": [{
            "function": "git_watcher.check_repos",
-           "expression": "rate(1 minute)" 
+           "expression": "rate(1 hour)" 
        }],
        "keep_warm": false, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
        "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
