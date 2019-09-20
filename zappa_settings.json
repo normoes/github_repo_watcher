@@ -8,6 +8,8 @@
         "log_level": "INFO", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
         "aws_kms_key_arn": "arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d",
         "aws_region": "eu-west-1",
+        "apigateway_enabled": false, // Set to false if you don't want to create an API Gateway resource. Default true.
+        // "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "events": [{
            "function": "git_watcher.check_repos",
            "expression": "rate(1 hour)" 
