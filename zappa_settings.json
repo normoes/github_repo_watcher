@@ -1,6 +1,7 @@
 {
     "dev": {
         "project_name": "github-repo-wat",
+        "lambda_description": "Github repository watcher.", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
         "runtime": "python3.6",
         "s3_bucket": "github.watcher",
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
@@ -8,17 +9,24 @@
         "log_level": "INFO", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
         "aws_kms_key_arn": "arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d",
         "aws_region": "eu-west-1",
+        // "role_name": "MyLambdaRole", // Name of Zappa execution role. Default <project_name>-<env>-ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
         "apigateway_enabled": false, // Set to false if you don't want to create an API Gateway resource. Default true.
         // "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
+        "aws_environment_variables": {"DATABASE_URL": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegERUD+3WY5xwqvSncWkY1R3AAAAvzCBvAYJKoZIhvcNAQcGoIGuMIGrAgEAMIGlBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDA476EdBIu92L6WZ6gIBEIB4cHMnp4O8qYsUppADTuKPT5CYO0AN7CgzNoYa7k5dbcfuAPkCNyZrsaTG/YKOSCdv6gDUNFp0AzASjTJeSAR5j/KL9EOnU9NN4zKj8k3EF63woetPdK6yEvu6jp7uxfrl1HbxPt31uSjkH2RFWvijlppFpFJ2UAxy"},  // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "events": [{
            "function": "git_watcher.check_repos",
            "expression": "rate(1 hour)" 
        }],
+       "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
+           "SubnetIds": [ "subnet-039b2ad2b7608e0e4", "subnet-0c5a8e109eca7be38" ], // Note: not all availability zones support Lambda!
+           "SecurityGroupIds": [ "sg-0a40f499dcb331852" ]
+       },
        "keep_warm": false, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
        "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
        "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
        "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
+       "xray_tracing": false, // Optional, enable AWS X-Ray tracing on your lambda function.
        "debug": false // Print Zappa configuration errors tracebacks in the 500. Default true.
     }
 }
