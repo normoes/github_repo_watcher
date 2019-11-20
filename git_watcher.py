@@ -43,9 +43,19 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     # Decrypt code should run once and variables stored outside of the function
     # handler so that these are decrypted once per container
     DATABASE_URL = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))[
-            "Plaintext"
-        ]
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["MATTERMOST_URL"]
+    MATTERMOST_URL = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["MATTERMOST_TOKEN"]
+    MATTERMOST_TOKEN = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_TOKEN"]
+    DOCKER_HUB_TOKEN = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     DB_TYPE = database.POSTGRES
 else:
@@ -54,6 +64,9 @@ else:
     # DATABASE_URL = "data.db"
     DB_TYPE = database.POSTGRES
     DATABASE_URL = "postgres@localhost:5432/test"
+    MATTERMOST_URL = ""
+    MATTERMOST_TOKEN = ""
+    DOCKER_HUB_TOKEN = ""
 
 # REALEASES
 # curl --silent "https://api.github.com/repos/monero-project/monero/releases/latest" | grep '"tag_name":' | cut -d ':' -f2 | tr -d '", '
@@ -121,7 +134,10 @@ class MattermostWebHook(WebHook):
 
     def __init__(self, name="", host="", token="", realms=None):
         super().__init__(
-            name=name, url=self.URL.format(host=host, token=token), url_safe=self.URL.format(host=host, token="***"), realms=realms
+            name=name,
+            url=self.URL.format(host=host, token=token),
+            url_safe=self.URL.format(host=host, token="***"),
+            realms=realms,
         )
 
     def trigger(self, data, realm=None, debug=False):
@@ -140,7 +156,9 @@ class MattermostWebHook(WebHook):
         # trigger specific branch
         response = self._trigger(data=data_, debug=debug)
         if response:
-            log.warn(f"Mattermost webhook reponse: {response.status_code}, {response.text}")
+            log.warn(
+                f"Mattermost webhook reponse: {response.status_code}, {response.text}"
+            )
 
 
 class DockerCloudWebHook(WebHook):
@@ -148,7 +166,10 @@ class DockerCloudWebHook(WebHook):
 
     def __init__(self, name="", token="", realms=None):
         super().__init__(
-            name=name, url=self.URL.format(token=token), url_safe=self.URL.format(token="***"), realms=realms
+            name=name,
+            url=self.URL.format(token=token),
+            url_safe=self.URL.format(token="***"),
+            realms=realms,
         )
 
     def trigger(self, data, realm=None, debug=False):
@@ -164,7 +185,9 @@ class DockerCloudWebHook(WebHook):
         # trigger specific branch
         response = self._trigger(data=data_, debug=debug)
         if response:
-            log.warn(f"Dockercloud webhook reponse: {response.status_code}, {response.text}")
+            log.warn(
+                f"Dockercloud webhook reponse: {response.status_code}, {response.text}"
+            )
 
 
 class Watcher:
@@ -274,9 +297,7 @@ class GithubWatcher(Watcher):
     KEY_COMMIT_HASH = "sha"
     KEY_TAG_NAME = "name"
 
-    def __init__(
-        self, repo="github/training-kit", db=None, webhooks=None, debug=False
-    ):
+    def __init__(self, repo="github/training-kit", db=None, webhooks=None, debug=False):
         self.debug = debug
         self.repo = repo
         self.url = self.URL.format(repo=repo, endpoint="{endpoint}")
@@ -290,18 +311,24 @@ class GithubWatcher(Watcher):
             if not self.release_exists(release=release):
                 if self.db and not self.debug:
                     self.db.insert_(database.RELEASES, release)
-                self.trigger(data={"branch": "t.b.d.", "content": release}, realm=GITHUB_RELEASE_REALM, debug=self.debug)
+                self.trigger(
+                    data={"branch": "t.b.d.", "content": release},
+                    realm=GITHUB_RELEASE_REALM,
+                    debug=self.debug,
+                )
                 result.update({"release": release})
         # latest commit on given branch (default=master)
-        commit = self.get_recent_commit_on_branch(
-            repo=self.repo, branch="master"
-        )
+        commit = self.get_recent_commit_on_branch(repo=self.repo, branch="master")
         if commit:
             if not self.commit_exists(commit=commit):
                 if self.db and not self.debug:
                     self.db.insert_(database.COMMITS, commit)
                 # trigger build as push to github master branch
-                self.trigger(data={"branch": "master", "content": commit}, realm=GITHUB_COMMIT_REALM, debug=self.debug)
+                self.trigger(
+                    data={"branch": "master", "content": commit},
+                    realm=GITHUB_COMMIT_REALM,
+                    debug=self.debug,
+                )
                 result.update({"commit": commit})
         # latest tag
         tag = self.get_recent_tag(repo=self.repo)
@@ -310,7 +337,11 @@ class GithubWatcher(Watcher):
                 if self.db and not self.debug:
                     self.db.insert_(database.TAGS, tag)
                 # trigger build as push to github most_recent_tag branch
-                self.trigger(data={"branch": "t.b.d.", "content": tag}, realm=GITHUB_TAG_REALM, debug=self.debug)
+                self.trigger(
+                    data={"branch": "t.b.d.", "content": tag},
+                    realm=GITHUB_TAG_REALM,
+                    debug=self.debug,
+                )
                 result.update({"tag": tag})
 
         return result
@@ -329,19 +360,11 @@ class GithubWatcher(Watcher):
             tag_name = response.get(self.KEY_TAG_NAME, None)
             release_name = response.get(self.KEY_RELEASE_NAME, None)
             release = dict(
-                {
-                    "repo": repo,
-                    "tag_name": tag_name,
-                    "release_name": release_name,
-                }
+                {"repo": repo, "tag_name": tag_name, "release_name": release_name}
             )
             log.info("Latest release: {}".format(release))
             return release
-        except (
-            ValueError,
-            NotFoundException,
-            ApiRateLimitExceededException,
-        ) as e:
+        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
 
         return None
@@ -356,17 +379,11 @@ class GithubWatcher(Watcher):
         endpoint = self.ENDPOINT_LATEST_COMMIT.format(branch=branch)
         try:
             response = self.request_json(self.url.format(endpoint=endpoint))
-            commit_hash = self.get_commit_hash(
-                response.get(self.KEY_COMMIT_NAME, None)
-            )
+            commit_hash = self.get_commit_hash(response.get(self.KEY_COMMIT_NAME, None))
             commit = dict({"repo": repo, "branch": branch, "sha": commit_hash})
             log.info("Most recent commit: {}".format(commit))
             return commit
-        except (
-            ValueError,
-            NotFoundException,
-            ApiRateLimitExceededException,
-        ) as e:
+        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
 
         return None
@@ -384,16 +401,10 @@ class GithubWatcher(Watcher):
             commit_hash = self.get_commit_hash(
                 response[0].get(self.KEY_COMMIT_NAME, None)
             )
-            tag = dict(
-                {"repo": repo, "tag_name": tag_name, "sha": commit_hash}
-            )
+            tag = dict({"repo": repo, "tag_name": tag_name, "sha": commit_hash})
             log.info("Most recent tag: {}".format(tag))
             return tag
-        except (
-            ValueError,
-            NotFoundException,
-            ApiRateLimitExceededException,
-        ) as e:
+        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
 
         return None
@@ -406,17 +417,21 @@ def check_repos(event, context):
     # no realms given, will not be triggered at all
     monero_dockercloud_trigger = DockerCloudWebHook(
         name="monero_dockercloud",
-        token="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/trigger/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/call/",
+        token=DOCKER_HUB_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
     )
     # trigger allowed for updates on github tags only
     monero_mattermost_trigger = MattermostWebHook(
         name="monero_mattermost",
-        host="https://chat.cryptosphere-systems.com",
-        token="t18hf5fmf3ymjjgqzxxwnoaukh",
-        realms=(GITHUB_REALMS[GITHUB_TAG_REALM], ),
+        host=MATTERMOST_URL,
+        token=MATTERMOST_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
     repos = (
-        ("monero-project/monero", (monero_mattermost_trigger, monero_dockercloud_trigger, )),
+        (
+            "monero-project/monero",
+            (monero_mattermost_trigger, monero_dockercloud_trigger),
+        ),
         ("aeonix/aeon", None),
         ("bitcoin/bitcoin", None),
         ("python/black", None),

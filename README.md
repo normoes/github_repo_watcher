@@ -5,7 +5,7 @@ This tool checks github repositories for:
 * latest commits on a specific branch (**default** = `master`)
 * latest tags
 
-Results are stored into a database for later reference. I.e. 
+Results are stored into a database for later reference. I.e.
 
 It can be run regularly (cronjob, AWS Lambda, ...) to provide up-to-date results.
 
