@@ -53,6 +53,10 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     MATTERMOST_TOKEN = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
+    ENCRYPTED = os.environ["DOCKER_HUB_SOURCE"]
+    DOCKER_HUB_SOURCE = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
     ENCRYPTED = os.environ["DOCKER_HUB_TOKEN"]
     DOCKER_HUB_TOKEN = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
@@ -66,6 +70,7 @@ else:
     DATABASE_URL = "postgres@localhost:5432/test"
     MATTERMOST_URL = ""
     MATTERMOST_TOKEN = ""
+    DOCKER_HUB_SOURCE = ""
     DOCKER_HUB_TOKEN = ""
 
 # REALEASES
@@ -162,13 +167,13 @@ class MattermostWebHook(WebHook):
 
 
 class DockerCloudWebHook(WebHook):
-    URL = "https://cloud.docker.com/api/build/v1/source/{token}"
+    URL = "https://hub.docker.com/api/build/v1/source/{source}/trigger/{token}/call/"
 
-    def __init__(self, name="", token="", realms=None):
+    def __init__(self, name="", source="", token="", realms=None):
         super().__init__(
             name=name,
-            url=self.URL.format(token=token),
-            url_safe=self.URL.format(token="***"),
+            url=self.URL.format(source=source, token=token),
+            url_safe=self.URL.format(source="***", token="***"),
             realms=realms,
         )
 
@@ -183,6 +188,7 @@ class DockerCloudWebHook(WebHook):
         log.warn(f"Dockercloud webhook triggered for branch {branch}: {str(self)}")
         data_ = {"source_type": "Branch", "source_name": branch}
         # trigger specific branch
+
         response = self._trigger(data=data_, debug=debug)
         if response:
             log.warn(
@@ -415,8 +421,10 @@ def check_repos(event, context):
 
     news = list()
     # no realms given, will not be triggered at all
+    # assuming: https://hub.docker.com/api/build/v1/source/<source>/trigger/<token>/call/
     monero_dockercloud_trigger = DockerCloudWebHook(
         name="monero_dockercloud",
+        source=DOCKER_HUB_SOURCE,
         token=DOCKER_HUB_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
     )
