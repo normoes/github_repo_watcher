@@ -45,20 +45,28 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     DATABASE_URL = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
-    ENCRYPTED = os.environ["MATTERMOST_URL"]
-    MATTERMOST_URL = bytes.decode(
+    ENCRYPTED = os.environ["MATTERMOST_MONERO_URL"]
+    MATTERMOST_MONERO_URL = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
-    ENCRYPTED = os.environ["MATTERMOST_TOKEN"]
-    MATTERMOST_TOKEN = bytes.decode(
+    ENCRYPTED = os.environ["MATTERMOST_MONERO_TOKEN"]
+    MATTERMOST_MONERO_TOKEN = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
-    ENCRYPTED = os.environ["DOCKER_HUB_SOURCE"]
-    DOCKER_HUB_SOURCE = bytes.decode(
+    ENCRYPTED = os.environ["DOCKER_HUB_MONERO_SOURCE"]
+    DOCKER_HUB_MONERO_SOURCE = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
-    ENCRYPTED = os.environ["DOCKER_HUB_TOKEN"]
-    DOCKER_HUB_TOKEN = bytes.decode(
+    ENCRYPTED = os.environ["DOCKER_HUB_MONERO_TOKEN"]
+    DOCKER_HUB_MONERO_TOKEN = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_SOURCE"]
+    DOCKER_HUB_BITCOIN_SOURCE = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_TOKEN"]
+    DOCKER_HUB_BITCOIN_TOKEN = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     DB_TYPE = database.POSTGRES
@@ -68,10 +76,12 @@ else:
     # DATABASE_URL = "data.db"
     DB_TYPE = database.POSTGRES
     DATABASE_URL = "postgres@localhost:5432/test"
-    MATTERMOST_URL = ""
-    MATTERMOST_TOKEN = ""
-    DOCKER_HUB_SOURCE = ""
-    DOCKER_HUB_TOKEN = ""
+    MATTERMOST_MONERO_URL = ""
+    MATTERMOST_MONERO_TOKEN = ""
+    DOCKER_HUB_MONERO_SOURCE = ""
+    DOCKER_HUB_MONERO_TOKEN = ""
+    DOCKER_HUB_BITCOIN_SOURCE = ""
+    DOCKER_HUB_BITCOIN_TOKEN = ""
 
 # REALEASES
 # curl --silent "https://api.github.com/repos/monero-project/monero/releases/latest" | grep '"tag_name":' | cut -d ':' -f2 | tr -d '", '
@@ -169,7 +179,17 @@ class MattermostWebHook(WebHook):
 class DockerCloudWebHook(WebHook):
     URL = "https://hub.docker.com/api/build/v1/source/{source}/trigger/{token}/call/"
 
-    def __init__(self, name="", source="", token="", realms=None):
+    def __init__(
+        self,
+        name="",
+        source_branch="master",
+        source_type="Branch",
+        source="",
+        token="",
+        realms=None,
+    ):
+        self.source_branch = source_branch
+        self.source_type = source_type
         super().__init__(
             name=name,
             url=self.URL.format(source=source, token=token),
@@ -180,13 +200,14 @@ class DockerCloudWebHook(WebHook):
     def trigger(self, data, realm=None, debug=False):
         if not super().allowed(realm):
             return
-        branch = data.get("branch", None)
-        if not branch:
+        if not self.source_branch or not self.source_type:
             # trigger all builds
             log.error("no info for trigger: {}".format(str(self)))
             return
-        log.warn(f"Dockercloud webhook triggered for branch {branch}: {str(self)}")
-        data_ = {"source_type": "Branch", "source_name": branch}
+        log.warn(
+            f"Dockercloud webhook triggered for branch {self.source_branch}: {str(self)}"
+        )
+        data_ = {"source_type": self.source_type, "source_name": self.source_branch}
         # trigger specific branch
 
         response = self._trigger(data=data_, debug=debug)
@@ -422,26 +443,59 @@ def check_repos(event, context):
     news = list()
     # no realms given, will not be triggered at all
     # assuming: https://hub.docker.com/api/build/v1/source/<source>/trigger/<token>/call/
-    monero_dockercloud_trigger = DockerCloudWebHook(
-        name="monero_dockercloud",
-        source=DOCKER_HUB_SOURCE,
-        token=DOCKER_HUB_TOKEN,
+
+    # Commits on master trigger build for 'latest' docker image tag.
+    monero_dockercloud_trigger_commits = DockerCloudWebHook(
+        name="monero_commits_dockercloud",
+        source_branch="master",
+        source=DOCKER_HUB_MONERO_SOURCE,
+        token=DOCKER_HUB_MONERO_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
+    )
+    monero_dockercloud_trigger_tags = DockerCloudWebHook(
+        name="monero_tags_dockercloud",
+        source_branch="most_recent_tag",
+        source=DOCKER_HUB_MONERO_SOURCE,
+        token=DOCKER_HUB_MONERO_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
     # trigger allowed for updates on github tags only
     monero_mattermost_trigger = MattermostWebHook(
-        name="monero_mattermost",
-        host=MATTERMOST_URL,
-        token=MATTERMOST_TOKEN,
+        name="monero_tags_mattermost",
+        host=MATTERMOST_MONERO_URL,
+        token=MATTERMOST_MONERO_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+    # Commits on master trigger build for 'latest' docker image tag.
+    bitcoin_dockercloud_trigger_commits = DockerCloudWebHook(
+        name="bitcoin_commits_dockercloud",
+        source_branch="master",
+        source=DOCKER_HUB_BITCOIN_SOURCE,
+        token=DOCKER_HUB_BITCOIN_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
+    )
+    # Commits on master trigger build for 'specific tag' and 'most_recent_tag' docker image tags.
+    bitcoin_dockercloud_trigger_tags = DockerCloudWebHook(
+        name="bitcoin_tags_dockercloud",
+        source_branch="most_recent_tag",
+        source=DOCKER_HUB_BITCOIN_SOURCE,
+        token=DOCKER_HUB_BITCOIN_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
     repos = (
         (
             "monero-project/monero",
-            (monero_mattermost_trigger, monero_dockercloud_trigger),
+            (
+                monero_mattermost_trigger,
+                monero_dockercloud_trigger_commits,
+                monero_dockercloud_trigger_tags,
+            ),
         ),
         ("aeonix/aeon", None),
-        ("bitcoin/bitcoin", None),
+        (
+            "bitcoin/bitcoin",
+            (bitcoin_dockercloud_trigger_commits, bitcoin_dockercloud_trigger_tags),
+        ),
         ("python/black", None),
         ("antonbabenko/pre-commit-terraform", None),
         ("pre-commit/pre-commit-hooks", None),
