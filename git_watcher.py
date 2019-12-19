@@ -1,9 +1,12 @@
-import requests
 import logging
 import os
 
+import requests
+
 from utils import database
 from utils.exceptions import ApiRateLimitExceededException, NotFoundException
+
+from eventhooks import MattermostWebHook, DockerCloudWebHook
 
 """
 Keep track of
@@ -20,6 +23,7 @@ This can be used to trigger build pipelines when a new tag/version was released.
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+logging.getLogger("Event").setLevel(logging.INFO)
 
 DEBUG = False
 
@@ -72,6 +76,7 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     DB_TYPE = database.POSTGRES
 else:
     log.setLevel(logging.DEBUG)
+    logging.getLogger("Event").setLevel(logging.DEBUG)
     # DB_TYPE = database.POSTGRES
     # DATABASE_URL = "data.db"
     DB_TYPE = database.POSTGRES
@@ -98,129 +103,10 @@ else:
 #    "sha": "77e1ebff26aeb1466a79f2535b66f165c62468ab", <-- last commit
 
 
-class WatchEvent:
-    def __init__(self, webhook=""):
-        pass
-
-
-class WebHook(WatchEvent):
-    HEADERS = {"Content-Type": "application/json"}
-
-    def __init__(self, name="", url="", url_safe="", realms=None):
-        self.name = name
-        self.url = url
-        self.url_safe = url_safe
-        self.realms = realms
-        log.debug("Webhook event URL {}".format(self.url_safe))
-        log.debug("Webhook event REALMS {}".format(self.realms))
-        super().__init__()
-
-    def _trigger(self, data=None, debug=False):
-        if debug:
-            return None
-        # print(self)
-        # return f"post {data} to  {self.url_safe}."
-        response = requests.post(self.url, json=data, headers=self.HEADERS)
-        if not response:
-            log.warn("no response")
-            return None
-        try:
-            log.debug(f"[{response.status_code}], {response.json()}")
-        except:
-            log.debug(f"[{response.status_code}], {response.text}")
-
-        return response
-
-    def allowed(self, realm=None):
-        if not self.realms:
-            return False
-        allowed = realm in self.realms
-        if not allowed:
-            log.warning(f"Cannot trigger {str(self)}. {realm} not in {self.realms}")
-            return False
-        return True
-
-    def __str__(self):
-        return self.name + ": " + self.url_safe
-
-
-class MattermostWebHook(WebHook):
-    URL = "{host}/hooks/{token}"
-
-    def __init__(self, name="", host="", token="", realms=None):
-        super().__init__(
-            name=name,
-            url=self.URL.format(host=host, token=token),
-            url_safe=self.URL.format(host=host, token="***"),
-            realms=realms,
-        )
-
-    def trigger(self, data, realm=None, debug=False):
-        if not super().allowed(realm):
-            return
-        content = data.get("content", None)
-        repo = None
-        if content:
-            repo = content.pop("repo", None)
-        if not repo or not content:
-            # trigger all builds
-            log.error("no info for trigger: {}".format(str(self)))
-            return
-        log.warn(f"Mattermost webhook triggered for repo {repo}: {str(self)}")
-        data_ = {"text": f"{repo} was tagged: {content}"}
-        # trigger specific branch
-        response = self._trigger(data=data_, debug=debug)
-        if response:
-            log.warn(
-                f"Mattermost webhook reponse: {response.status_code}, {response.text}"
-            )
-
-
-class DockerCloudWebHook(WebHook):
-    URL = "https://hub.docker.com/api/build/v1/source/{source}/trigger/{token}/call/"
-
-    def __init__(
-        self,
-        name="",
-        source_branch="master",
-        source_type="Branch",
-        source="",
-        token="",
-        realms=None,
-    ):
-        self.source_branch = source_branch
-        self.source_type = source_type
-        super().__init__(
-            name=name,
-            url=self.URL.format(source=source, token=token),
-            url_safe=self.URL.format(source="***", token="***"),
-            realms=realms,
-        )
-
-    def trigger(self, data, realm=None, debug=False):
-        if not super().allowed(realm):
-            return
-        if not self.source_branch or not self.source_type:
-            # trigger all builds
-            log.error("no info for trigger: {}".format(str(self)))
-            return
-        log.warn(
-            f"Dockercloud webhook triggered for branch {self.source_branch}: {str(self)}"
-        )
-        data_ = {"source_type": self.source_type, "source_name": self.source_branch}
-        # trigger specific branch
-
-        response = self._trigger(data=data_, debug=debug)
-        if response:
-            log.warn(
-                f"Dockercloud webhook reponse: {response.status_code}, {response.text}"
-            )
-
-
 class Watcher:
-    def __init__(self, db=None, webhooks=None):
+    def __init__(self, db=None, events=None):
         self.db = db
-        self.webhooks = webhooks
+        self.events = events
 
     def request_json(self, url):
         return self.request_url(url).json()
@@ -245,7 +131,6 @@ class Watcher:
                 raise ValueError(
                     "status code {} with {}".format(status_code, response.text)
                 )
-        # log.debug('response: {}'.format(response.json()))
         return response
 
     def release_exists(self, release):
@@ -304,12 +189,12 @@ class Watcher:
         return exists
 
     def trigger(self, data=None, realm=None, debug=False):
-        if not self.webhooks:
-            log.warn("No webhooks found.")
+        if not self.events:
+            log.warn("No events found.")
             return
-        for webhook in self.webhooks:
-            if webhook:
-                webhook.trigger(data=data, realm=realm, debug=debug)
+        for event in self.events:
+            if event:
+                event.trigger(data=data, realm=realm, debug=debug)
 
 
 class GithubWatcher(Watcher):
@@ -324,11 +209,11 @@ class GithubWatcher(Watcher):
     KEY_COMMIT_HASH = "sha"
     KEY_TAG_NAME = "name"
 
-    def __init__(self, repo="github/training-kit", db=None, webhooks=None, debug=False):
+    def __init__(self, repo="github/training-kit", db=None, events=None, debug=False):
         self.debug = debug
         self.repo = repo
         self.url = self.URL.format(repo=repo, endpoint="{endpoint}")
-        super().__init__(db=db, webhooks=webhooks)
+        super().__init__(db=db, events=events)
 
     def check_repo(self):
         result = dict({"repo": self.repo})
@@ -500,9 +385,9 @@ def check_repos(event, context):
         ("antonbabenko/pre-commit-terraform", None),
         ("pre-commit/pre-commit-hooks", None),
     )
-    for repo, webhooks in repos:
+    for repo, events in repos:
         log.info("Checking: " + f"{repo}")
-        watcher = GithubWatcher(repo=repo, db=db, webhooks=webhooks, debug=DEBUG)
+        watcher = GithubWatcher(repo=repo, db=db, events=events, debug=DEBUG)
         news.append(watcher.check_repo())
 
     log.info(news)
