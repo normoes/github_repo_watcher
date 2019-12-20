@@ -1,3 +1,24 @@
+"""
+
+github_repo_watcher
+
+author: Norman Moeschter-Schenck
+email: norman.moeschter@gmail.com
+
+Keep track of
+* releases
+* tags
+* new commits to a branch (default=master)
+for specific github repositories.
+
+Results are stored in a database.
+
+In case a webhook is defined, it is triggered.
+This can be used to trigger build pipelines when a new tag/version was released.
+This can also be used to trigger Mattermost webhooks to automatically post to channels.
+"""
+
+
 import logging
 import os
 
@@ -8,17 +29,6 @@ from utils.exceptions import ApiRateLimitExceededException, NotFoundException
 
 from eventhooks import MattermostWebHook, DockerCloudWebHook
 
-"""
-Keep track of
-* releases
-* tags
-* new commits to a branch (default=master)
-
-Results are stored to a database.
-
-In case a webhook is defined, it is triggered.
-This can be used to trigger build pipelines when a new tag/version was released.
-"""
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -88,22 +98,11 @@ else:
     DOCKER_HUB_BITCOIN_SOURCE = ""
     DOCKER_HUB_BITCOIN_TOKEN = ""
 
-# REALEASES
-# curl --silent "https://api.github.com/repos/monero-project/monero/releases/latest" | grep '"tag_name":' | cut -d ':' -f2 | tr -d '", '
-# curl --silent "https://api.github.com/repos/monero-project/monero/releases" | grep '"tag_name":' | cut -d ':' -f2 | tr -d '", ' | head -n1
-# URL = "https://api.github.com/repos/{0}/{1}"
-
-# TAGS
-
-# BRANCHES (LAST COMMIT)
-# curl https://api.github.com/repos/monero-project/monero/branches/master
-# {
-#  "name": "master",
-#  "commit": {
-#    "sha": "77e1ebff26aeb1466a79f2535b66f165c62468ab", <-- last commit
-
 
 class Watcher:
+    """Base class for
+    """
+
     def __init__(self, db=None, events=None):
         self.db = db
         self.events = events
@@ -116,21 +115,19 @@ class Watcher:
 
         :returns: JSON response, if JSON
         """
-        log.debug("URL: {url}".format(url=url))
+        log.debug(f"URL: '{url}'.")
         response = requests.get(url=url)
 
         status_code = response.status_code
         if status_code not in [200, 301, 302]:
             if status_code == 404:
-                raise NotFoundException("nothing found at {}".format(url))
+                raise NotFoundException(f"Nothing found at '{url}'.")
             elif status_code == 403:
                 raise ApiRateLimitExceededException(
-                    "API rate limit exceeded: {}.".format(response.text)
+                    f"API rate limit exceeded: Response: '{response.text}'."
                 )
             else:
-                raise ValueError(
-                    "status code {} with {}".format(status_code, response.text)
-                )
+                raise ValueError(f"Status code '{status_code}' with '{response.text}'.")
         return response
 
     def release_exists(self, release):
@@ -143,7 +140,7 @@ class Watcher:
         """
         exists = self.db.release_exists(release)
         if exists:
-            log.warn("Release already exists: {}".format(release))
+            log.warn(f"Release already exists: '{release}'.")
         return exists
 
     def commit_exists(self, commit):
@@ -158,7 +155,7 @@ class Watcher:
             return False
         exists = self.db.commit_exists(commit)
         if exists:
-            log.warn("Commit already exists: {}".format(commit))
+            log.warn(f"Commit already exists: '{commit}'.")
         return exists
 
     def get_commit_hash(self, commit):
@@ -167,7 +164,7 @@ class Watcher:
         if not self.db:
             return False
         if not commit:
-            raise ValueError("No commit found in response: {}".format(commit))
+            raise ValueError("No commit found in response: '{commit}'.")
         commit_hash = commit.get(self.KEY_COMMIT_HASH, None)
 
         return commit_hash
@@ -185,7 +182,7 @@ class Watcher:
             return False
         exists = self.db.tag_exists(tag)
         if exists:
-            log.warn("Tag already exists: {}".format(tag))
+            log.warn(f"Tag already exists: '{tag}'.")
         return exists
 
     def trigger(self, data=None, realm=None, debug=False):
@@ -203,7 +200,7 @@ class GithubWatcher(Watcher):
     ENDPOINT_LATEST_RELEASE = "releases/latest"
     ENDPOINT_LATEST_COMMIT = "branches/{branch}"
     ENDPOINT_LATEST_TAG = "tags"
-    KEY_TAG_NAME = "tag_name"
+    KEY_RELEASE_TAG_NAME = "tag_name"
     KEY_RELEASE_NAME = "name"
     KEY_COMMIT_NAME = "commit"
     KEY_COMMIT_HASH = "sha"
@@ -216,7 +213,7 @@ class GithubWatcher(Watcher):
         super().__init__(db=db, events=events)
 
     def check_repo(self):
-        result = dict({"repo": self.repo})
+        result = {"repo": self.repo}
         # latest realease
         release = self.get_recent_repo(repo=self.repo)
         if release:
@@ -269,12 +266,10 @@ class GithubWatcher(Watcher):
             url = self.url.format(endpoint=endpoint)
             log.info(url)
             response = self.request_json(url=url)
-            tag_name = response.get(self.KEY_TAG_NAME, None)
+            tag_name = response.get(self.KEY_RELEASE_TAG_NAME, None)
             release_name = response.get(self.KEY_RELEASE_NAME, None)
-            release = dict(
-                {"repo": repo, "tag_name": tag_name, "release_name": release_name}
-            )
-            log.info("Latest release: {}".format(release))
+            release = {"repo": repo, "tag_name": tag_name, "release_name": release_name}
+            log.info(f"Latest release: '{release}'.")
             return release
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
@@ -292,8 +287,8 @@ class GithubWatcher(Watcher):
         try:
             response = self.request_json(self.url.format(endpoint=endpoint))
             commit_hash = self.get_commit_hash(response.get(self.KEY_COMMIT_NAME, None))
-            commit = dict({"repo": repo, "branch": branch, "sha": commit_hash})
-            log.info("Most recent commit: {}".format(commit))
+            commit = {"repo": repo, "branch": branch, "sha": commit_hash}
+            log.info(f"Most recent commit: '{commit}'.")
             return commit
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
@@ -313,8 +308,8 @@ class GithubWatcher(Watcher):
             commit_hash = self.get_commit_hash(
                 response[0].get(self.KEY_COMMIT_NAME, None)
             )
-            tag = dict({"repo": repo, "tag_name": tag_name, "sha": commit_hash})
-            log.info("Most recent tag: {}".format(tag))
+            tag = {"repo": repo, "tag_name": tag_name, "sha": commit_hash}
+            log.info(f"Most recent tag: '{tag}'.")
             return tag
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
             log.warn(e)
@@ -325,7 +320,7 @@ class GithubWatcher(Watcher):
 def check_repos(event, context):
     db = database.Db(dbtype=DB_TYPE, dbname=DATABASE_URL)
 
-    news = list()
+    news = []
     # no realms given, will not be triggered at all
     # assuming: https://hub.docker.com/api/build/v1/source/<source>/trigger/<token>/call/
 
@@ -384,9 +379,13 @@ def check_repos(event, context):
         ("python/black", None),
         ("antonbabenko/pre-commit-terraform", None),
         ("pre-commit/pre-commit-hooks", None),
+        ("wagtail/wagtail", None),
+        ("serverless/serverless", None),
+        ("terraform-linters/tflint", None),
+        ("hashicorp/terraform", None),
     )
     for repo, events in repos:
-        log.info("Checking: " + f"{repo}")
+        log.info(f"Checking: '{repo}'.")
         watcher = GithubWatcher(repo=repo, db=db, events=events, debug=DEBUG)
         news.append(watcher.check_repo())
 
@@ -402,7 +401,7 @@ if __name__ == "__main__":
             print(f"{i}" + ": " + new.get("repo"))
             del new["repo"]
         if len(new) > 0:
-            for k, v in new.items():
-                print(" {key}: {value}".format(key=k, value=v))
+            for key, value in new.items():
+                print(f" {key}: {value}")
         else:
-            print("  no news")
+            print("  No news.")
