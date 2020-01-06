@@ -17,6 +17,7 @@
            "function": "git_watcher.check_repos",
            "expression": "rate(1 hour)"
        }],
+       "exclude": ["*.gz", "*.rar", "*.zip", "__pycache__", "venv", "*.db"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
        "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
            "SubnetIds": [ "subnet-039b2ad2b7608e0e4", "subnet-0c5a8e109eca7be38" ], // Note: not all availability zones support Lambda!
            "SecurityGroupIds": [ "sg-0a40f499dcb331852" ]
