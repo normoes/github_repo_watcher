@@ -140,7 +140,7 @@ class Watcher:
         """
         exists = self.db.release_exists(release)
         if exists:
-            log.warn(f"Release already exists: '{release}'.")
+            log.warning(f"Release already exists: '{release}'.")
         return exists
 
     def commit_exists(self, commit):
@@ -155,7 +155,7 @@ class Watcher:
             return False
         exists = self.db.commit_exists(commit)
         if exists:
-            log.warn(f"Commit already exists: '{commit}'.")
+            log.warning(f"Commit already exists: '{commit}'.")
         return exists
 
     def get_commit_hash(self, commit):
@@ -182,12 +182,12 @@ class Watcher:
             return False
         exists = self.db.tag_exists(tag)
         if exists:
-            log.warn(f"Tag already exists: '{tag}'.")
+            log.warning(f"Tag already exists: '{tag}'.")
         return exists
 
     def trigger(self, data=None, realm=None, debug=False):
         if not self.events:
-            log.warn("No events found.")
+            log.warning("No events found.")
             return
         for event in self.events:
             if event:
@@ -220,11 +220,8 @@ class GithubWatcher(Watcher):
             if not self.release_exists(release=release):
                 if self.db and not self.debug:
                     self.db.insert_(database.RELEASES, release)
-                self.trigger(
-                    data={"branch": "t.b.d.", "content": release},
-                    realm=GITHUB_RELEASE_REALM,
-                    debug=self.debug,
-                )
+                data = f"New release for {self.repo}: '{release}'."
+                self.trigger(data=data, realm=GITHUB_RELEASE_REALM, debug=self.debug)
                 result.update({"release": release})
         # latest commit on given branch (default=master)
         commit = self.get_recent_commit_on_branch(repo=self.repo, branch="master")
@@ -232,12 +229,8 @@ class GithubWatcher(Watcher):
             if not self.commit_exists(commit=commit):
                 if self.db and not self.debug:
                     self.db.insert_(database.COMMITS, commit)
-                # trigger build as push to github master branch
-                self.trigger(
-                    data={"branch": "master", "content": commit},
-                    realm=GITHUB_COMMIT_REALM,
-                    debug=self.debug,
-                )
+                data = f"New commit to 'master' for '{self.repo}': '{commit}'."
+                self.trigger(data=data, realm=GITHUB_COMMIT_REALM, debug=self.debug)
                 result.update({"commit": commit})
         # latest tag
         tag = self.get_recent_tag(repo=self.repo)
@@ -245,12 +238,8 @@ class GithubWatcher(Watcher):
             if not self.tag_exists(tag=tag):
                 if self.db and not self.debug:
                     self.db.insert_(database.TAGS, tag)
-                # trigger build as push to github most_recent_tag branch
-                self.trigger(
-                    data={"branch": "t.b.d.", "content": tag},
-                    realm=GITHUB_TAG_REALM,
-                    debug=self.debug,
-                )
+                data = f"New tag for '{self.repo}': '{tag}'."
+                self.trigger(data=data, realm=GITHUB_TAG_REALM, debug=self.debug)
                 result.update({"tag": tag})
 
         return result
@@ -272,7 +261,7 @@ class GithubWatcher(Watcher):
             log.info(f"Latest release: '{release}'.")
             return release
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
-            log.warn(e)
+            log.warning(e)
 
         return None
 
@@ -291,7 +280,7 @@ class GithubWatcher(Watcher):
             log.info(f"Most recent commit: '{commit}'.")
             return commit
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
-            log.warn(e)
+            log.warning(e)
 
         return None
 
@@ -312,7 +301,7 @@ class GithubWatcher(Watcher):
             log.info(f"Most recent tag: '{tag}'.")
             return tag
         except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
-            log.warn(e)
+            log.warning(e)
 
         return None
 
