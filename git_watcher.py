@@ -387,8 +387,7 @@ if __name__ == "__main__":
     news = check_repos(event=None, context=None)
     for i, new in enumerate(news):
         if "repo" in new:
-            print(f"{i}" + ": " + new.get("repo"))
-            del new["repo"]
+            print(f"{i}" + ": " + new.pop("repo"))
         if len(new) > 0:
             for key, value in new.items():
                 print(f" {key}: {value}")
