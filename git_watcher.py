@@ -83,6 +83,14 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     DOCKER_HUB_BITCOIN_TOKEN = bytes.decode(
         boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
+    ENCRYPTED = os.environ["DOCKER_HUB_AEON_SOURCE"]
+    DOCKER_HUB_AEON_SOURCE = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_AEON_TOKEN"]
+    DOCKER_HUB_AEON_TOKEN = bytes.decode(
+        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
     DB_TYPE = database.POSTGRES
 else:
     log.setLevel(logging.DEBUG)
@@ -97,6 +105,8 @@ else:
     DOCKER_HUB_MONERO_TOKEN = ""
     DOCKER_HUB_BITCOIN_SOURCE = ""
     DOCKER_HUB_BITCOIN_TOKEN = ""
+    DOCKER_HUB_AEON_SOURCE = ""
+    DOCKER_HUB_AEON_TOKEN = ""
 
 
 class Watcher:
@@ -351,6 +361,22 @@ def check_repos(event, context):
         token=DOCKER_HUB_BITCOIN_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
+    # Commits on master trigger build for 'latest' docker image tag.
+    aeon_dockercloud_trigger_commits = DockerCloudWebHook(
+        name="aeon_commits_dockercloud",
+        source_branch="master",
+        source=DOCKER_HUB_AEON_SOURCE,
+        token=DOCKER_HUB_AEON_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
+    )
+    # Commits on master trigger build for 'specific tag' and 'most_recent_tag' docker image tags.
+    aeon_dockercloud_trigger_tags = DockerCloudWebHook(
+        name="aeon_tags_dockercloud",
+        source_branch="most_recent_tag",
+        source=DOCKER_HUB_AEON_SOURCE,
+        token=DOCKER_HUB_AEON_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
     repos = (
         (
             "monero-project/monero",
@@ -360,7 +386,10 @@ def check_repos(event, context):
                 monero_dockercloud_trigger_tags,
             ),
         ),
-        ("aeonix/aeon", None),
+        (
+            "aeonix/aeon",
+            (aeon_dockercloud_trigger_commits, aeon_dockercloud_trigger_tags),
+        ),
         (
             "bitcoin/bitcoin",
             (bitcoin_dockercloud_trigger_commits, bitcoin_dockercloud_trigger_tags),
