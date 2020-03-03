@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, DateTime, Integer, String, ForeignKey, MetaData
+from sqlalchemy import Table, Column, DateTime, Integer, String, MetaData
 from sqlalchemy.sql import exists, and_
 from sqlalchemy.orm import sessionmaker
 import datetime

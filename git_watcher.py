@@ -99,14 +99,15 @@ else:
     # DATABASE_URL = "data.db"
     DB_TYPE = database.POSTGRES
     DATABASE_URL = "postgres@localhost:5432/test"
-    MATTERMOST_MONERO_URL = ""
-    MATTERMOST_MONERO_TOKEN = ""
-    DOCKER_HUB_MONERO_SOURCE = ""
-    DOCKER_HUB_MONERO_TOKEN = ""
-    DOCKER_HUB_BITCOIN_SOURCE = ""
-    DOCKER_HUB_BITCOIN_TOKEN = ""
-    DOCKER_HUB_AEON_SOURCE = ""
-    DOCKER_HUB_AEON_TOKEN = ""
+    # Add 'nosec' commentto make bandit ignore: [B105:hardcoded_password_string]
+    MATTERMOST_MONERO_URL = ""  # nosec
+    MATTERMOST_MONERO_TOKEN = ""  # nosec
+    DOCKER_HUB_MONERO_SOURCE = ""  # nosec
+    DOCKER_HUB_MONERO_TOKEN = ""  # nosec
+    DOCKER_HUB_BITCOIN_SOURCE = ""  # nosec
+    DOCKER_HUB_BITCOIN_TOKEN = ""  # nosec
+    DOCKER_HUB_AEON_SOURCE = ""  # nosec
+    DOCKER_HUB_AEON_TOKEN = ""  # nosec
 
 
 class Watcher:
