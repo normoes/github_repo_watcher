@@ -8,6 +8,39 @@
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "log_level": "INFO", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
         "aws_kms_key_arn": "arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d",
+        "aws_region": "eu-west-2",
+        // "role_name": "MyLambdaRole", // Name of Zappa execution role. Default <project_name>-<env>-ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
+        "apigateway_enabled": false, // Set to false if you don't want to create an API Gateway resource. Default true.
+        // "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
+        "memory_size": 256, // Lambda function memory in MB. Default 512.
+        "aws_environment_variables": {"DATABASE_URL": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegERUD+3WY5xwqvSncWkY1R3AAAAvzCBvAYJKoZIhvcNAQcGoIGuMIGrAgEAMIGlBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDA476EdBIu92L6WZ6gIBEIB4cHMnp4O8qYsUppADTuKPT5CYO0AN7CgzNoYa7k5dbcfuAPkCNyZrsaTG/YKOSCdv6gDUNFp0AzASjTJeSAR5j/KL9EOnU9NN4zKj8k3EF63woetPdK6yEvu6jp7uxfrl1HbxPt31uSjkH2RFWvijlppFpFJ2UAxy", "MATTERMOST_MONERO_URL": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegE8Up3WGFgw3fpnZWpvDX2kAAAAhDCBgQYJKoZIhvcNAQcGoHQwcgIBADBtBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDKZKG8FDkuVb/epjdwIBEIBAmB5BOBi3E7JAv+Lw10xgUdtXbGmRlWLSV+go2QamqwCf7JilChvNty82xF4u9JqGbTJt6YtUdaaCDN3Vbc6ftg==", "MATTERMOST_MONERO_TOKEN": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegG98dmLTBFGPKuIy4bsELETAAAAeDB2BgkqhkiG9w0BBwagaTBnAgEAMGIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMjmEjj9xy86a4Cm6xAgEQgDXA0iHZdV2h/7KHnV2cpjbsB0W51oZ1gmjLzt/J0HW7F/9pEWlPjM5UiEPQ0+NYhKtC+hYsPA==", "DOCKER_HUB_AEON_TOKEN": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegFDAjuV3h6W0NHpSAWY2FmcAAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDHe4tqDVPB2yy/fEOgIBEIA/PDlh2P2rAihue2iF0pHdivMqYNSKk/sljza299jdQ73p1zmrtD0AMErue7haduJBPbsRxu+MN6Ko0DTM16Uq", "DOCKER_HUB_AEON_SOURCE": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegEbWmiz0GJi0LeeRphRlpM2AAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDC3D2NW2yyyV6ijMRQIBEIA/LsTUWiXMShqMSfCnZwEGyZLaCp88vzHKH+SIMEkWF8UhcAsZVsYxNSIgqS9Nja4HD71oDsRSvd6eSuV4OIxo", "DOCKER_HUB_MONERO_TOKEN": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegEQ7Jl+PDUq0RJCXI7/15O8AAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDCZX5Jztj7mjSiyuHgIBEIA/cuiXvLS5lsIKNOXQNxGM2DTthDbHOOGrJwyQRLOrLbJ4QY3Wlq4T5tvN9lqvTSCJnmBtrYzLIF9oUnQ879ne", "DOCKER_HUB_MONERO_SOURCE": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegHzLOQX9UcWX6bvViGWvUbBAAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDG8t8B0zwuxostgkRgIBEIA/ujXJ4Jz678ucRrKo4W6s4D6cw4wcXzU5tAp7i6nbv757pDI91O/+zfU64rCqryLuPEVtDsg6nw4A5PPV2hSP", "DOCKER_HUB_BITCOIN_TOKEN": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegGkzLtNj25rEHZB4ay3BXNFAAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDM/atqUzcqmHxwxCegIBEIA/c4ZMKrTgUNnpCY/uYX9USMD7phpi/wnGtDhW+px+CQlW0JcqeTIoRaovFudfnpWoF5bFWkWy0oHDXOZM9+JM", "DOCKER_HUB_BITCOIN_SOURCE": "AQICAHjXDZpqefPvg36KSFZlOh+E+Wwt4b/lfhAHIl7LNglkegGsEgucqh+mXuVilfH1UptAAAAAgzCBgAYJKoZIhvcNAQcGoHMwcQIBADBsBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDONYHr83ERoqYAuflQIBEIA/hj1SiSJULZ5xHXlE+rr0/MF+dG42oFOyLuWUAhB1A98Lc+7WTDJVZAg8TWGCfMXArUzjKmB7AvA9DLsCT+94"},  // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
+        "events": [{
+           "function": "git_watcher.check_repos",
+           "expression": "rate(1 hour)"
+       }],
+       "exclude": ["*.gz", "*.rar", "*.zip", "__pycache__", "venv", "*.db"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
+       "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
+           "SubnetIds": [ "subnet-039b2ad2b7608e0e4", "subnet-0c5a8e109eca7be38" ], // Note: not all availability zones support Lambda!
+           "SecurityGroupIds": [ "sg-0a40f499dcb331852" ]
+       },
+       "keep_warm": false, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
+       "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
+       "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
+       "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
+       "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
+       "xray_tracing": false, // Optional, enable AWS X-Ray tracing on your lambda function.
+       "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 900.)
+       "debug": false // Print Zappa configuration errors tracebacks in the 500. Default true.
+    },
+    "staging": {
+        "project_name": "github-repo-wat",
+        "lambda_description": "Github repository watcher.", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
+        "runtime": "python3.6",
+        "s3_bucket": "github.watcher",
+        "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
+        "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
+        "log_level": "INFO", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
+        "aws_kms_key_arn": "arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d",
         "aws_region": "eu-west-1",
         // "role_name": "MyLambdaRole", // Name of Zappa execution role. Default <project_name>-<env>-ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
         "apigateway_enabled": false, // Set to false if you don't want to create an API Gateway resource. Default true.
