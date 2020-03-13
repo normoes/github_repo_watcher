@@ -27,7 +27,7 @@ import requests
 from utils import database
 from utils.exceptions import ApiRateLimitExceededException, NotFoundException
 
-from eventhooks import MattermostWebHook, DockerCloudWebHook
+from eventhooks import MattermostWebHook, DockerCloudWebHook, AwsSesEmailHook
 
 
 logging.basicConfig()
@@ -108,6 +108,8 @@ else:
     DOCKER_HUB_BITCOIN_TOKEN = ""  # nosec
     DOCKER_HUB_AEON_SOURCE = ""  # nosec
     DOCKER_HUB_AEON_TOKEN = ""  # nosec
+
+RECIPIENTS = os.getenv("RECIPIENTS", [])
 
 
 class Watcher:
@@ -324,6 +326,14 @@ def check_repos(event, context):
     # no realms given, will not be triggered at all
     # assuming: https://hub.docker.com/api/build/v1/source/<source>/trigger/<token>/call/
 
+    # General AWS SES email hook to send mails via AWS SES.
+    # Trigger allowed for updates on github tags only.
+    aws_ses_email_trigger_tags = AwsSesEmailHook(
+        name="aws_ses_email",
+        # recipients=RECIPIENTS,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+
     # Commits on master trigger build for 'latest' docker image tag.
     monero_dockercloud_trigger_commits = DockerCloudWebHook(
         name="monero_commits_dockercloud",
@@ -332,6 +342,7 @@ def check_repos(event, context):
         token=DOCKER_HUB_MONERO_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
     )
+    # Trigger allowed for updates on github tags only.
     monero_dockercloud_trigger_tags = DockerCloudWebHook(
         name="monero_tags_dockercloud",
         source_branch="most_recent_tag",
@@ -339,7 +350,6 @@ def check_repos(event, context):
         token=DOCKER_HUB_MONERO_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
-    # trigger allowed for updates on github tags only
     monero_mattermost_trigger = MattermostWebHook(
         name="monero_tags_mattermost",
         host=MATTERMOST_MONERO_URL,
@@ -385,23 +395,32 @@ def check_repos(event, context):
                 monero_mattermost_trigger,
                 monero_dockercloud_trigger_commits,
                 monero_dockercloud_trigger_tags,
+                aws_ses_email_trigger_tags,
             ),
         ),
         (
             "aeonix/aeon",
-            (aeon_dockercloud_trigger_commits, aeon_dockercloud_trigger_tags),
+            (
+                aeon_dockercloud_trigger_commits,
+                aeon_dockercloud_trigger_tags,
+                aws_ses_email_trigger_tags,
+            ),
         ),
         (
             "bitcoin/bitcoin",
-            (bitcoin_dockercloud_trigger_commits, bitcoin_dockercloud_trigger_tags),
+            (
+                bitcoin_dockercloud_trigger_commits,
+                bitcoin_dockercloud_trigger_tags,
+                aws_ses_email_trigger_tags,
+            ),
         ),
-        ("python/black", None),
-        ("antonbabenko/pre-commit-terraform", None),
-        ("pre-commit/pre-commit-hooks", None),
-        ("wagtail/wagtail", None),
-        ("serverless/serverless", None),
-        ("terraform-linters/tflint", None),
-        ("hashicorp/terraform", None),
+        ("python/black", (aws_ses_email_trigger_tags,)),
+        ("antonbabenko/pre-commit-terraform", (aws_ses_email_trigger_tags,)),
+        ("pre-commit/pre-commit-hooks", (aws_ses_email_trigger_tags,)),
+        ("wagtail/wagtail", (aws_ses_email_trigger_tags,)),
+        ("serverless/serverless", (aws_ses_email_trigger_tags,)),
+        ("terraform-linters/tflint", (aws_ses_email_trigger_tags,)),
+        ("hashicorp/terraform", (aws_ses_email_trigger_tags,)),
     )
     for repo, events in repos:
         log.info(f"Checking: '{repo}'.")
