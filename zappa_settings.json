@@ -2,7 +2,7 @@
     "dev": {
         "project_name": "github-repo-wat",
         "lambda_description": "Github repository watcher.", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
-        "runtime": "python3.6",
+        "runtime": "python3.7",
         "s3_bucket": "github.watcher",
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
@@ -35,7 +35,7 @@
     "staging": {
         "project_name": "github-repo-wat",
         "lambda_description": "Github repository watcher.", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
-        "runtime": "python3.6",
+        "runtime": "python3.7",
         "s3_bucket": "github.watcher",
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
