@@ -53,49 +53,59 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     import boto3
     from base64 import b64decode
 
+    kms_client = boto3.client("kms")
+
     ENCRYPTED = os.environ["DATABASE_URL"]
     # Decrypt code should run once and variables stored outside of the function
     # handler so that these are decrypted once per container
     DATABASE_URL = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["MATTERMOST_MONERO_URL"]
     MATTERMOST_MONERO_URL = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["MATTERMOST_MONERO_TOKEN"]
     MATTERMOST_MONERO_TOKEN = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_MONERO_SOURCE"]
     DOCKER_HUB_MONERO_SOURCE = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_MONERO_TOKEN"]
     DOCKER_HUB_MONERO_TOKEN = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_SOURCE"]
     DOCKER_HUB_BITCOIN_SOURCE = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_TOKEN"]
     DOCKER_HUB_BITCOIN_TOKEN = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_LIGHTNING_SOURCE"]
+    DOCKER_HUB_LIGHTNING_SOURCE = bytes.decode(
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["DOCKER_HUB_LIGHTNING_TOKEN"]
+    DOCKER_HUB_LIGHTNING_TOKEN = bytes.decode(
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_AEON_SOURCE"]
     DOCKER_HUB_AEON_SOURCE = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_AEON_TOKEN"]
     DOCKER_HUB_AEON_TOKEN = bytes.decode(
-        boto3.client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     DB_TYPE = database.POSTGRES
 else:
     log.setLevel(logging.DEBUG)
     logging.getLogger("Event").setLevel(logging.DEBUG)
-    # DB_TYPE = database.POSTGRES
+    # DB_TYPE = database.SQLITE
     # DATABASE_URL = "data.db"
     DB_TYPE = database.POSTGRES
     DATABASE_URL = "postgres@localhost:5432/test"
@@ -106,6 +116,8 @@ else:
     DOCKER_HUB_MONERO_TOKEN = ""  # nosec
     DOCKER_HUB_BITCOIN_SOURCE = ""  # nosec
     DOCKER_HUB_BITCOIN_TOKEN = ""  # nosec
+    DOCKER_HUB_LIGHTNING_SOURCE = ""  # nosec
+    DOCKER_HUB_LIGHTNING_TOKEN = ""  # nosec
     DOCKER_HUB_AEON_SOURCE = ""  # nosec
     DOCKER_HUB_AEON_TOKEN = ""  # nosec
 
@@ -373,6 +385,22 @@ def check_repos(event, context):
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
     # Commits on master trigger build for 'latest' docker image tag.
+    lightning_dockercloud_trigger_commits = DockerCloudWebHook(
+        name="lightning_commits_dockercloud",
+        source_branch="master",
+        source=DOCKER_HUB_LIGHTNING_SOURCE,
+        token=DOCKER_HUB_LIGHTNING_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
+    )
+    # Commits on master trigger build for 'specific tag' and 'most_recent_tag' docker image tags.
+    lightning_dockercloud_trigger_tags = DockerCloudWebHook(
+        name="lightning_tags_dockercloud",
+        source_branch="most_recent_tag",
+        source=DOCKER_HUB_LIGHTNING_SOURCE,
+        token=DOCKER_HUB_LIGHTNING_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+    # Commits on master trigger build for 'latest' docker image tag.
     aeon_dockercloud_trigger_commits = DockerCloudWebHook(
         name="aeon_commits_dockercloud",
         source_branch="master",
@@ -411,6 +439,14 @@ def check_repos(event, context):
             (
                 bitcoin_dockercloud_trigger_commits,
                 bitcoin_dockercloud_trigger_tags,
+                aws_ses_email_trigger_tags,
+            ),
+        ),
+        (
+            "lightningnetwork/lnd",
+            (
+                lightning_dockercloud_trigger_commits,
+                lightning_dockercloud_trigger_tags,
                 aws_ses_email_trigger_tags,
             ),
         ),
