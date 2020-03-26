@@ -53,7 +53,8 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     import boto3
     from base64 import b64decode
 
-    kms_client = boto3.client("kms")
+    session = boto3.session.Session()
+    kms_client = session.client("kms")
 
     ENCRYPTED = os.environ["DATABASE_URL"]
     # Decrypt code should run once and variables stored outside of the function
@@ -63,43 +64,43 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     )
     ENCRYPTED = os.environ["MATTERMOST_MONERO_URL"]
     MATTERMOST_MONERO_URL = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["MATTERMOST_MONERO_TOKEN"]
     MATTERMOST_MONERO_TOKEN = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_MONERO_SOURCE"]
     DOCKER_HUB_MONERO_SOURCE = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_MONERO_TOKEN"]
     DOCKER_HUB_MONERO_TOKEN = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_SOURCE"]
     DOCKER_HUB_BITCOIN_SOURCE = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_BITCOIN_TOKEN"]
     DOCKER_HUB_BITCOIN_TOKEN = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_LIGHTNING_SOURCE"]
     DOCKER_HUB_LIGHTNING_SOURCE = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_LIGHTNING_TOKEN"]
     DOCKER_HUB_LIGHTNING_TOKEN = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_AEON_SOURCE"]
     DOCKER_HUB_AEON_SOURCE = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     ENCRYPTED = os.environ["DOCKER_HUB_AEON_TOKEN"]
     DOCKER_HUB_AEON_TOKEN = bytes.decode(
-        kms_client("kms").decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
     DB_TYPE = database.POSTGRES
 else:
