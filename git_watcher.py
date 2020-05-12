@@ -70,6 +70,14 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     MATTERMOST_MONERO_TOKEN = bytes.decode(
         kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
     )
+    ENCRYPTED = os.environ["MATTERMOST_BITCOIN_URL"]
+    MATTERMOST_BITCOIN_URL = bytes.decode(
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
+    ENCRYPTED = os.environ["MATTERMOST_BITCOIN_TOKEN"]
+    MATTERMOST_BITCOIN_TOKEN = bytes.decode(
+        kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
+    )
     ENCRYPTED = os.environ["DOCKER_HUB_MONERO_SOURCE"]
     DOCKER_HUB_MONERO_SOURCE = bytes.decode(
         kms_client.decrypt(CiphertextBlob=b64decode(ENCRYPTED))["Plaintext"]
@@ -113,6 +121,8 @@ else:
     # Add 'nosec' commentto make bandit ignore: [B105:hardcoded_password_string]
     MATTERMOST_MONERO_URL = ""  # nosec
     MATTERMOST_MONERO_TOKEN = ""  # nosec
+    MATTERMOST_BITCOIN_URL = ""  # nosec
+    MATTERMOST_BITCOIN_TOKEN = ""  # nosec
     DOCKER_HUB_MONERO_SOURCE = ""  # nosec
     DOCKER_HUB_MONERO_TOKEN = ""  # nosec
     DOCKER_HUB_BITCOIN_SOURCE = ""  # nosec
@@ -385,6 +395,12 @@ def check_repos(event, context):
         token=DOCKER_HUB_BITCOIN_TOKEN,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
+    bitcoin_mattermost_trigger = MattermostWebHook(
+        name="bitcoin_tags_mattermost",
+        host=MATTERMOST_BITCOIN_URL,
+        token=MATTERMOST_BITCOIN_TOKEN,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
     # Commits on master trigger build for 'latest' docker image tag.
     lightning_dockercloud_trigger_commits = DockerCloudWebHook(
         name="lightning_commits_dockercloud",
@@ -440,6 +456,7 @@ def check_repos(event, context):
             (
                 bitcoin_dockercloud_trigger_commits,
                 bitcoin_dockercloud_trigger_tags,
+                bitcoin_mattermost_trigger,
                 aws_ses_email_trigger_tags,
             ),
         ),
