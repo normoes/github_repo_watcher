@@ -1,0 +1,82 @@
+include:
+  - project: 'general/common-gitlab-stages'
+    ref: v0.0.12
+    file: '/.gitlab-ci-deploy_image.yml'
+  - project: 'general/common-gitlab-stages'
+    ref: v0.0.12
+    file: '/linter/.gitlab-ci-black.yml'
+  - project: 'general/common-gitlab-stages'
+    ref: v0.0.12
+    file: '/linter/.gitlab-ci-flake8.yml'
+  - project: 'general/common-gitlab-stages'
+    ref: v0.0.12
+    file: '/security/.gitlab-ci-python_audit.yml'
+
+stages:
+  - format
+  - security-checks
+  - deploy
+
+## black formatting in gitlab CI runner
+black_formatting:
+  extends: .black_formatting
+  variables:
+    GIT_DEPTH: 1
+  ## mark as 'passed with warning'
+  ## default is false (set in base .gitlab-ci file)
+  allow_failure: true
+
+## safety checks
+check_python_dependencies:
+  extends: .check_python_dependencies
+  variables:
+    REQUIREMENTS: "requirements.txt"
+    GIT_DEPTH: 1
+
+  ## mark as 'passed with warning'
+  ## default is false (set in included .gitlab-ci file)
+  allow_failure: true
+
+## bandit checks
+python_static_analysis:
+  extends: .python_static_analysis
+  variables:
+    GIT_DEPTH: 1
+  ## mark as 'passed with warning'
+  ## default is false (set in included .gitlab-ci file)
+  allow_failure: false
+
+## flake8 in gitlab CI runner
+flake8_check:
+  extends: .flake8_check
+  variables:
+    GIT_DEPTH: 1
+  ## mark as 'passed with warning'
+  ## default is false (set in base .gitlab-ci file)
+  allow_failure: true
+
+## pylint duplicates check in gitlab CI runner
+pylint_duplicates_check:
+  extends: .pylint_duplicates_check
+  variables:
+    PATHS_TO_CHECK: "./* ./utils/*"
+    GIT_DEPTH: 1
+
+deploy_lambda:
+  extends:
+    - .deploy_image
+    # - .common_env_vars
+    # - .common_db_env_vars
+    # - .common_cache_env_vars
+  variables:
+    AWS_REGION: $AWS_REGION_STAGING
+    GIT_STRATEGY: none
+
+  stage: deploy
+  # 'staging': non-critical Ireland
+  # 'develop': non-critical London
+  script:
+    - zappa update staging
+
+  only:
+    - master

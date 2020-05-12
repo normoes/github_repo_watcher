@@ -163,7 +163,9 @@ class Watcher:
                     f"API rate limit exceeded: Response: '{response.text}'."
                 )
             else:
-                raise ValueError(f"Status code '{status_code}' with '{response.text}'.")
+                raise ValueError(
+                    f"Status code '{status_code}' with '{response.text}'."
+                )
         return response
 
     def release_exists(self, release):
@@ -242,7 +244,9 @@ class GithubWatcher(Watcher):
     KEY_COMMIT_HASH = "sha"
     KEY_TAG_NAME = "name"
 
-    def __init__(self, repo="github/training-kit", db=None, events=None, debug=False):
+    def __init__(
+        self, repo="github/training-kit", db=None, events=None, debug=False
+    ):
         self.debug = debug
         self.repo = repo
         self.url = self.URL.format(repo=repo, endpoint="{endpoint}")
@@ -257,16 +261,22 @@ class GithubWatcher(Watcher):
                 if self.db and not self.debug:
                     self.db.insert_(database.RELEASES, release)
                 data = f"New release for {self.repo}: '{release}'."
-                self.trigger(data=data, realm=GITHUB_RELEASE_REALM, debug=self.debug)
+                self.trigger(
+                    data=data, realm=GITHUB_RELEASE_REALM, debug=self.debug
+                )
                 result.update({"release": release})
         # latest commit on given branch (default=master)
-        commit = self.get_recent_commit_on_branch(repo=self.repo, branch="master")
+        commit = self.get_recent_commit_on_branch(
+            repo=self.repo, branch="master"
+        )
         if commit:
             if not self.commit_exists(commit=commit):
                 if self.db and not self.debug:
                     self.db.insert_(database.COMMITS, commit)
                 data = f"New commit to 'master' for '{self.repo}': '{commit}'."
-                self.trigger(data=data, realm=GITHUB_COMMIT_REALM, debug=self.debug)
+                self.trigger(
+                    data=data, realm=GITHUB_COMMIT_REALM, debug=self.debug
+                )
                 result.update({"commit": commit})
         # latest tag
         tag = self.get_recent_tag(repo=self.repo)
@@ -275,7 +285,9 @@ class GithubWatcher(Watcher):
                 if self.db and not self.debug:
                     self.db.insert_(database.TAGS, tag)
                 data = f"New tag for '{self.repo}': '{tag}'."
-                self.trigger(data=data, realm=GITHUB_TAG_REALM, debug=self.debug)
+                self.trigger(
+                    data=data, realm=GITHUB_TAG_REALM, debug=self.debug
+                )
                 result.update({"tag": tag})
 
         return result
@@ -293,10 +305,18 @@ class GithubWatcher(Watcher):
             response = self.request_json(url=url)
             tag_name = response.get(self.KEY_RELEASE_TAG_NAME, None)
             release_name = response.get(self.KEY_RELEASE_NAME, None)
-            release = {"repo": repo, "tag_name": tag_name, "release_name": release_name}
+            release = {
+                "repo": repo,
+                "tag_name": tag_name,
+                "release_name": release_name,
+            }
             log.info(f"Latest release: '{release}'.")
             return release
-        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
+        except (
+            ValueError,
+            NotFoundException,
+            ApiRateLimitExceededException,
+        ) as e:
             log.warning(e)
 
         return None
@@ -311,11 +331,17 @@ class GithubWatcher(Watcher):
         endpoint = self.ENDPOINT_LATEST_COMMIT.format(branch=branch)
         try:
             response = self.request_json(self.url.format(endpoint=endpoint))
-            commit_hash = self.get_commit_hash(response.get(self.KEY_COMMIT_NAME, None))
+            commit_hash = self.get_commit_hash(
+                response.get(self.KEY_COMMIT_NAME, None)
+            )
             commit = {"repo": repo, "branch": branch, "sha": commit_hash}
             log.info(f"Most recent commit: '{commit}'.")
             return commit
-        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
+        except (
+            ValueError,
+            NotFoundException,
+            ApiRateLimitExceededException,
+        ) as e:
             log.warning(e)
 
         return None
@@ -336,7 +362,11 @@ class GithubWatcher(Watcher):
             tag = {"repo": repo, "tag_name": tag_name, "sha": commit_hash}
             log.info(f"Most recent tag: '{tag}'.")
             return tag
-        except (ValueError, NotFoundException, ApiRateLimitExceededException) as e:
+        except (
+            ValueError,
+            NotFoundException,
+            ApiRateLimitExceededException,
+        ) as e:
             log.warning(e)
 
         return None
