@@ -11,6 +11,9 @@ include:
   - project: 'general/common-gitlab-stages'
     ref: v0.0.12
     file: '/security/.gitlab-ci-python_audit.yml'
+  - project: 'side-projects/infrastructure'
+    ref: 0.0.2
+    file: '/gitlab_stages/environments/.gitlab-ci-environments.yml'
 
 stages:
   - format
@@ -70,13 +73,22 @@ deploy_lambda:
     # - .common_cache_env_vars
   variables:
     AWS_REGION: $AWS_REGION_STAGING
-    GIT_STRATEGY: none
+    GIT_DEPTH: 1
 
   stage: deploy
+
+  before_script:
+    - python -m venv venv
+    - . venv/bin/activate
+    - apk add --no-cache postgresql-libs gcc musl-dev postgresql-dev
+    - pip install --no-cache-dir --upgrade -r build_requirements.txt
+    - pip-sync requirements.txt --pip-args="--no-cache-dir"
+
   # 'staging': non-critical Ireland
   # 'develop': non-critical London
   script:
-    - zappa update staging
+    # - . venv/bin/activate
+    - zappa update $ENV_NAME_STAGING
 
   only:
-    - master
+    - staging
