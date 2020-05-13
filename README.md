@@ -12,7 +12,14 @@ It can be run regularly (cronjob, AWS Lambda, ...) to provide up-to-date results
 ## python and dependencies
 
 * `python3` is used.
-* Have a look at `requirementsx.txt`.
+* Have a look at `requirements.in`.
+
+`pip-tools` is used to compile and pin dependencies from `requireemnts.in` into `requirements.txt`.
+
+When developing this project:
+* Make changes in `requirements.in`.
+* Run `./update_requirements.sh`.
+  - Runs `pip-compile`...
 
 ## use
 
@@ -72,15 +79,23 @@ or
 aws-vault-css-sideprojects -- zappa update dev
 ```
 
+The zappa configuraiton file `zappa_settings.json` contains two environments:
+* `dev`
+* `staging`
+
 ### secrets
 
 The database url `DATABASE_URL` is read as an AWS Lambda environment variable which is encrypted with a custom AWS KMS key.
-I specifically allow the AWS IAM Role created by zappa (`github-repo-wat-dev-ZappaLambdaExecutionRole`) to decrypt values encrypted with this custom AWS KMS key.
+I specifically allow the AWS IAM Role created by zappa to decrypt values encrypted with this custom AWS KMS key.
 This can be set in the AWS KMS settings of the key.
 
 For this to work `zappa_settings.json` needs to contain the AWS KMS key ARN: `arn:aws:kms:eu-west-1:733052150360:key/aa9dc195-e04e-41ca-a727-00a8a78b926d`.
 
-Code to read/decrypt the values is provided by AWS Lambda (Fucntion Configuration, below the Designer).
+Code to read/decrypt the values is provided by AWS Lambda (Function Configuration, below the Designer).
+
+I also wrote a python tool to en-(de-)crypt using AWS KMS keys in the cli:
+* https://github.com/normoes/aws-helpers#kms
+* https://github.com/normoes/aws-helpers/tree/master/kms
 
 
 ## logging
