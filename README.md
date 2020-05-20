@@ -14,22 +14,29 @@ It can be run regularly (cronjob, AWS Lambda, ...) to provide up-to-date results
 * `python3` is used.
 * Have a look at `requirements.in`.
 
-`pip-tools` is used to compile and pin dependencies from `requireemnts.in` into `requirements.txt`.
+`pip-tools` is used to compile and pin dependencies from `requirements.in` into `requirements.txt`.
 
 When developing this project:
+* Create a virtual environment and activate it:
+```
+python -m venv venv
+. venv/bin/activate
+```
+* Install `pip-tools` into the virtual environment:
+```
+pip install --upgrade -r build_requirements.txt
+```
 * Make changes in `requirements.in`.
 * Run `./update_requirements.sh`.
   - Runs `pip-compile`...
+* Install dependencies:
+```
+pip-sync requirements.txt
+```
 
 ## use
 
 The configuration (adding/removing repositories) still needs to be done right within `git_watcher.py`.
-
-Install dependencies
-```
-virtualenv -q -p /usr/bin/python3
-. venv/bin/activate
-```
 
 Initialise database when working locally
 ```

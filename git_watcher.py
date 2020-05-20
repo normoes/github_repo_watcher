@@ -131,6 +131,7 @@ else:
     DOCKER_HUB_LIGHTNING_TOKEN = ""  # nosec
     DOCKER_HUB_AEON_SOURCE = ""  # nosec
     DOCKER_HUB_AEON_TOKEN = ""  # nosec
+    AWS_SES_RECIPIENTS = ""  # nosec
 
 RECIPIENTS = os.getenv("RECIPIENTS", [])
 
