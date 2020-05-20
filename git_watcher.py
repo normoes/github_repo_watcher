@@ -27,7 +27,12 @@ import requests
 from utils import database
 from utils.exceptions import ApiRateLimitExceededException, NotFoundException
 
-from eventhooks import MattermostWebHook, DockerCloudWebHook, AwsSesEmailHook
+from eventhooks import (
+    MattermostWebHook,
+    DockerCloudWebHook,
+    AwsSesEmailHook,
+    SimpleEmailHook,
+)
 
 
 logging.basicConfig()
@@ -55,6 +60,20 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
 
     session = boto3.session.Session()
     kms_client = session.client("kms")
+    ssm_client = session.client("ssm")
+
+    parameter = ssm_client.get_parameter(
+        Name="/ses/smtp_credential_community", WithDecryption=True
+    )
+    AWS_SES_CREDENTIALS = parameter["Parameter"]["Value"]
+    parameter = ssm_client.get_parameter(
+        Name="/github-watcher/sender", WithDecryption=True
+    )
+    AWS_SES_SENDER = parameter["Parameter"]["Value"]
+    parameter = ssm_client.get_parameter(
+        Name="/github-watcher/recipients", WithDecryption=True
+    )
+    AWS_SES_RECIPIENTS = parameter["Parameter"]["Value"]
 
     ENCRYPTED = os.environ["DATABASE_URL"]
     # Decrypt code should run once and variables stored outside of the function
@@ -131,8 +150,9 @@ else:
     DOCKER_HUB_LIGHTNING_TOKEN = ""  # nosec
     DOCKER_HUB_AEON_SOURCE = ""  # nosec
     DOCKER_HUB_AEON_TOKEN = ""  # nosec
-
-RECIPIENTS = os.getenv("RECIPIENTS", [])
+    AWS_SES_CREDENTIALS = ""  # nosec
+    AWS_SES_SENDER = ""  # nosec
+    AWS_SES_RECIPIENTS = ""  # nosec
 
 
 class Watcher:
@@ -382,8 +402,19 @@ def check_repos(event, context):
     # General AWS SES email hook to send mails via AWS SES.
     # Trigger allowed for updates on github tags only.
     aws_ses_email_trigger_tags = AwsSesEmailHook(
-        name="aws_ses_email",
-        # recipients=RECIPIENTS,
+        name="new_repository_tag",
+        sender=AWS_SES_SENDER,
+        sender_name="github-repo-watcher",
+        recipients=AWS_SES_RECIPIENTS,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+    simple_email_trigger_tags = SimpleEmailHook(
+        name="new_repository_tag",
+        host="email-smtp.eu-west-1.amazonaws.com",
+        credentials=AWS_SES_CREDENTIALS,
+        sender=AWS_SES_SENDER,
+        sender_name="github-repo-watcher",
+        recipients=AWS_SES_RECIPIENTS,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
 
@@ -503,8 +534,8 @@ def check_repos(event, context):
         ("pre-commit/pre-commit-hooks", (aws_ses_email_trigger_tags,)),
         ("wagtail/wagtail", (aws_ses_email_trigger_tags,)),
         ("serverless/serverless", (aws_ses_email_trigger_tags,)),
-        ("terraform-linters/tflint", (aws_ses_email_trigger_tags,)),
-        ("hashicorp/terraform", (aws_ses_email_trigger_tags,)),
+        ("terraform-linters/tflint", (simple_email_trigger_tags,)),
+        ("hashicorp/terraform", (simple_email_trigger_tags,)),
     )
     for repo, events in repos:
         log.info(f"Checking: '{repo}'.")

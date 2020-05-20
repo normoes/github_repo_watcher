@@ -1,0 +1,65 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "kms:Decrypt",
+                "ec2:DescribeInstances",
+                "ec2:DetachNetworkInterface",
+                "xray:PutTelemetryRecords",
+                "lambda:InvokeFunction",
+                "ec2:ResetNetworkInterfaceAttribute",
+                "ec2:ModifyNetworkInterfaceAttribute",
+                "ses:SendRawEmail",
+                "ec2:DeleteNetworkInterface",
+                "ssm:GetParameter",
+                "xray:PutTraceSegments",
+                "ec2:CreateNetworkInterface",
+                "ses:SendEmail",
+                "ec2:DescribeNetworkInterfaces",
+                "route53:*",
+                "kms:DescribeKey",
+                "ec2:AttachNetworkInterface"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": "arn:aws:logs:*:*:*"
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::*"
+        },
+        {
+            "Sid": "VisualEditor3",
+            "Effect": "Allow",
+            "Action": "kinesis:*",
+            "Resource": "arn:aws:kinesis:*:*:*"
+        },
+        {
+            "Sid": "VisualEditor4",
+            "Effect": "Allow",
+            "Action": "sns:*",
+            "Resource": "arn:aws:sns:*:*:*"
+        },
+        {
+            "Sid": "VisualEditor5",
+            "Effect": "Allow",
+            "Action": "sqs:*",
+            "Resource": "arn:aws:sqs:*:*:*"
+        },
+        {
+            "Sid": "VisualEditor6",
+            "Effect": "Allow",
+            "Action": "dynamodb:*",
+            "Resource": "arn:aws:dynamodb:*:*:*"
+        }
+    ]
+}
