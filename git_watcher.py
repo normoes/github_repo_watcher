@@ -396,8 +396,6 @@ def check_repos(event, context):
     db = database.Db(dbtype=DB_TYPE, dbname=DATABASE_URL)
 
     news = []
-    # no realms given, will not be triggered at all
-    # assuming: https://hub.docker.com/api/build/v1/source/<source>/trigger/<token>/call/
 
     # General AWS SES email hook to send mails via AWS SES.
     # Trigger allowed for updates on github tags only.

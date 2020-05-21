@@ -5,15 +5,15 @@
 #    pip-compile --output-file=requirements.txt requirements.in
 #
 argcomplete==1.11.1       # via zappa
-boto3==1.13.13            # via -r requirements.in, kappa, zappa
-botocore==1.16.13         # via boto3, s3transfer
+boto3==1.13.14            # via -r requirements.in, kappa, zappa
+botocore==1.16.14         # via boto3, s3transfer
 certifi==2020.4.5.1       # via requests
 cfn-flip==1.2.3           # via troposphere
 chardet==3.0.4            # via requests
 click==7.1.2              # via cfn-flip, kappa, pip-tools
 docutils==0.15.2          # via botocore
 durationpy==0.5           # via zappa
-git+https://github.com/normoes/events.git@test_ses  # via -r requirements.in
+eventhooks==0.1.8         # via -r requirements.in
 future==0.18.2            # via zappa
 hjson==3.0.1              # via zappa
 idna==2.9                 # via requests

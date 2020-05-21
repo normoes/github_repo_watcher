@@ -18,7 +18,7 @@
         // "environment_variables": {"HOST": "email-smtp.eu-west-1.amazonaws.com", "PORT": "587", "SENDER_NAME": "github_repo_watcher"},  // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [{
            "function": "git_watcher.check_repos",
-           "expression": "rate(1 minute)"
+           "expression": "rate(1 hour)"
        }],
        "exclude": ["*.gz", "*.rar", "*.zip", "__pycache__", "venv", "*.db"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
        "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
@@ -53,7 +53,7 @@
         // "environment_variables": {"HOST": "email-smtp.eu-west-1.amazonaws.com", "PORT": "587", "SENDER_NAME": "github_repo_watcher"},  // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [{
            "function": "git_watcher.check_repos",
-           "expression": "rate(1 minute)"
+           "expression": "rate(1 hour)"
        }],
        "exclude": ["*.gz", "*.rar", "*.zip", "__pycache__", "venv", "*.db"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
        "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
