@@ -264,21 +264,36 @@ class Watcher:
             return
         for event in self.events:
             if event:
+                original_subject = ""
+                # Add repository name to email subject.
                 try:
                     if isinstance(event, AwsSesEmailHook) or isinstance(
                         event, SimpleEmailHook
                     ):
                         log.info(self.repo)
                         log.info(event.email.subject)
+                        original_subject = event.email.subject
                         event.email.subject = (
                             event.email.subject + f" - {self.repo}"
                         )
                         log.info(event.email.subject)
                 except Exception as e:
                     log.error(
-                        f"Could not change email subject from data '{data}'. Error: {str(e)}."
+                        f"Could not change email subject to contain repo name '{self.repo}'. Error: {str(e)}."
                     )
                 event.trigger(data=data, realm=realm, debug=debug)
+                # Restore original email subject.
+                try:
+                    if isinstance(event, AwsSesEmailHook) or isinstance(
+                        event, SimpleEmailHook
+                    ):
+                        log.info(event.email.subject)
+                        event.email.subject = original_subject
+                        log.info(event.email.subject)
+                except Exception as e:
+                    log.error(
+                        f"Could not reset email subject to original '{original_subject}'. Error: {str(e)}."
+                    )
 
 
 class GithubWatcher(Watcher):
