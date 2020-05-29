@@ -56,24 +56,39 @@ GITHUB_REALMS = {
 # Use different variables locally
 if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
     import boto3
+    from botocore.exceptions import ClientError
     from base64 import b64decode
 
     session = boto3.session.Session()
     kms_client = session.client("kms")
     ssm_client = session.client("ssm")
 
-    parameter = ssm_client.get_parameter(
-        Name="/ses/smtp_credential_community", WithDecryption=True
-    )
-    AWS_SES_CREDENTIALS = parameter["Parameter"]["Value"]
-    parameter = ssm_client.get_parameter(
-        Name="/github-watcher/sender", WithDecryption=True
-    )
-    AWS_SES_SENDER = parameter["Parameter"]["Value"]
-    parameter = ssm_client.get_parameter(
-        Name="/github-watcher/recipients", WithDecryption=True
-    )
-    AWS_SES_RECIPIENTS = parameter["Parameter"]["Value"]
+    try:
+        parameter = ssm_client.get_parameter(
+            Name="/ses/smtp_credential_community", WithDecryption=True
+        )
+        AWS_SES_CREDENTIALS = parameter["Parameter"]["Value"]
+    except ClientError as e:
+        log.warning(e.response["Error"]["Code"])
+        AWS_SES_CREDENTIALS = ""
+
+    try:
+        parameter = ssm_client.get_parameter(
+            Name="/github-watcher/sender", WithDecryption=True
+        )
+        AWS_SES_SENDER = parameter["Parameter"]["Value"]
+    except ClientError as e:
+        log.gwarning(e.response["Error"]["Code"])
+        AWS_SES_SENDER = ""
+
+    try:
+        parameter = ssm_client.get_parameter(
+            Name="/github-watcher/recipients", WithDecryption=True
+        )
+        AWS_SES_RECIPIENTS = parameter["Parameter"]["Value"]
+    except ClientError as e:
+        log.warning(e.response["Error"]["Code"])
+        AWS_SES_RECIPIENTS = ""
 
     ENCRYPTED = os.environ["DATABASE_URL"]
     # Decrypt code should run once and variables stored outside of the function
@@ -249,6 +264,23 @@ class Watcher:
             return
         for event in self.events:
             if event:
+                try:
+                    if isinstance(event, AwsSesEmailHook) or isinstance(
+                        event, SimpleEmailHook
+                    ):
+                        repo = data["repo"]
+                        info = (
+                            f" / {data['tag_name']}"
+                            if "tag_name" in data
+                            else ""
+                        )
+                        event.email.subject = (
+                            event.email.subject + f" - {repo}{info}"
+                        )
+                except Exception as e:
+                    log.error(
+                        f"Could not change email subject from data '{data}'. Error: {str(e)}."
+                    )
                 event.trigger(data=data, realm=realm, debug=debug)
 
 
@@ -399,17 +431,17 @@ def check_repos(event, context):
 
     # General AWS SES email hook to send mails via AWS SES.
     # Trigger allowed for updates on github tags only.
-    aws_ses_email_trigger_tags = AwsSesEmailHook(
-        name="new_repository_tag",
-        sender=AWS_SES_SENDER,
-        sender_name="github-repo-watcher",
-        recipients=AWS_SES_RECIPIENTS,
-        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
-    )
     simple_email_trigger_tags = SimpleEmailHook(
         name="new_repository_tag",
         host="email-smtp.eu-west-1.amazonaws.com",
         credentials=AWS_SES_CREDENTIALS,
+        sender=AWS_SES_SENDER,
+        sender_name="github-repo-watcher-simple",
+        recipients=AWS_SES_RECIPIENTS,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+    aws_ses_email_trigger_tags = AwsSesEmailHook(
+        name="new_repository_tag",
         sender=AWS_SES_SENDER,
         sender_name="github-repo-watcher",
         recipients=AWS_SES_RECIPIENTS,
@@ -500,6 +532,7 @@ def check_repos(event, context):
                 monero_dockercloud_trigger_commits,
                 monero_dockercloud_trigger_tags,
                 aws_ses_email_trigger_tags,
+                simple_email_trigger_tags,
             ),
         ),
         (
@@ -508,6 +541,7 @@ def check_repos(event, context):
                 aeon_dockercloud_trigger_commits,
                 aeon_dockercloud_trigger_tags,
                 aws_ses_email_trigger_tags,
+                simple_email_trigger_tags,
             ),
         ),
         (
@@ -517,6 +551,7 @@ def check_repos(event, context):
                 bitcoin_dockercloud_trigger_tags,
                 bitcoin_mattermost_trigger,
                 aws_ses_email_trigger_tags,
+                simple_email_trigger_tags,
             ),
         ),
         (
@@ -525,15 +560,37 @@ def check_repos(event, context):
                 lightning_dockercloud_trigger_commits,
                 lightning_dockercloud_trigger_tags,
                 aws_ses_email_trigger_tags,
+                simple_email_trigger_tags,
             ),
         ),
-        ("python/black", (aws_ses_email_trigger_tags,)),
-        ("antonbabenko/pre-commit-terraform", (aws_ses_email_trigger_tags,)),
-        ("pre-commit/pre-commit-hooks", (aws_ses_email_trigger_tags,)),
-        ("wagtail/wagtail", (aws_ses_email_trigger_tags,)),
-        ("serverless/serverless", (aws_ses_email_trigger_tags,)),
-        ("terraform-linters/tflint", (simple_email_trigger_tags,)),
-        ("hashicorp/terraform", (simple_email_trigger_tags,)),
+        (
+            "python/black",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "antonbabenko/pre-commit-terraform",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "pre-commit/pre-commit-hooks",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "wagtail/wagtail",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "serverless/serverless",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "terraform-linters/tflint",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
+        (
+            "hashicorp/terraform",
+            (aws_ses_email_trigger_tags, simple_email_trigger_tags,),
+        ),
     )
     for repo, events in repos:
         log.info(f"Checking: '{repo}'.")
