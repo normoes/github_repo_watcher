@@ -268,15 +268,12 @@ class Watcher:
                     if isinstance(event, AwsSesEmailHook) or isinstance(
                         event, SimpleEmailHook
                     ):
-                        repo = data["repo"]
-                        info = (
-                            f" / {data['tag_name']}"
-                            if "tag_name" in data
-                            else ""
-                        )
+                        log.info(self.repo)
+                        log.info(event.email.subject)
                         event.email.subject = (
-                            event.email.subject + f" - {repo}{info}"
+                            event.email.subject + f" - {self.repo}"
                         )
+                        log.info(event.email.subject)
                 except Exception as e:
                     log.error(
                         f"Could not change email subject from data '{data}'. Error: {str(e)}."
