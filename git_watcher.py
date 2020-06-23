@@ -116,6 +116,15 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
         log.warning(e.response["Error"]["Code"])
         AWS_SES_RECIPIENTS_DOM = ""
 
+    try:
+        parameter = ssm_client.get_parameter(
+            Name="/github-watcher/recipients_g", WithDecryption=True
+        )
+        AWS_SES_RECIPIENTS_G = parameter["Parameter"]["Value"]
+    except ClientError as e:
+        log.warning(e.response["Error"]["Code"])
+        AWS_SES_RECIPIENTS_G = ""
+
     ENCRYPTED = os.environ["DATABASE_URL"]
     # Decrypt code should run once and variables stored outside of the function
     # handler so that these are decrypted once per container
@@ -197,6 +206,7 @@ else:
     AWS_SES_RECIPIENTS_INFRA = ""  # nosec
     AWS_SES_RECIPIENTS_SEC = ""  # nosec
     AWS_SES_RECIPIENTS_DOM = ""  # nosec
+    AWS_SES_RECIPIENTS_G = ""  # nosec
 
 
 class Watcher:
@@ -502,6 +512,13 @@ def check_repos(event, context):
         recipients=AWS_SES_RECIPIENTS_DOM,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
     )
+    aws_ses_email_trigger_tags_g = AwsSesEmailHook(
+        name="new_repository_tag",
+        sender=AWS_SES_SENDER,
+        sender_name="github-repo-watcher",
+        recipients=AWS_SES_RECIPIENTS_G,
+        realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
 
     # Commits on master trigger build for 'latest' docker image tag.
     monero_dockercloud_trigger_commits = DockerCloudWebHook(
@@ -589,6 +606,7 @@ def check_repos(event, context):
                 simple_email_trigger_tags,
                 aws_ses_email_trigger_tags_sec,
                 aws_ses_email_trigger_tags_dom,
+                aws_ses_email_trigger_tags_g,
             ),
         ),
         (
@@ -608,6 +626,7 @@ def check_repos(event, context):
                 bitcoin_mattermost_trigger,
                 simple_email_trigger_tags,
                 aws_ses_email_trigger_tags_sec,
+                aws_ses_email_trigger_tags_g,
             ),
         ),
         (
@@ -617,6 +636,7 @@ def check_repos(event, context):
                 lightning_dockercloud_trigger_tags,
                 simple_email_trigger_tags,
                 aws_ses_email_trigger_tags_sec,
+                aws_ses_email_trigger_tags_g,
             ),
         ),
         (
@@ -630,7 +650,11 @@ def check_repos(event, context):
         ("pre-commit/pre-commit-hooks", (simple_email_trigger_tags,),),
         (
             "serverless/serverless",
-            (simple_email_trigger_tags, aws_ses_email_trigger_tags_infra),
+            (
+                simple_email_trigger_tags,
+                aws_ses_email_trigger_tags_infra,
+                aws_ses_email_trigger_tags_g,
+            ),
         ),
         (
             "terraform-linters/tflint",
@@ -642,6 +666,7 @@ def check_repos(event, context):
                 simple_email_trigger_tags,
                 aws_ses_email_trigger_tags_infra,
                 aws_ses_email_trigger_tags_sec,
+                aws_ses_email_trigger_tags_g,
             ),
         ),
     )
