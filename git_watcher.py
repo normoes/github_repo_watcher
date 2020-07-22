@@ -23,6 +23,7 @@ import logging
 import os
 
 import requests
+from requests.exceptions import RequestException
 
 from utils import database
 from utils.exceptions import ApiRateLimitExceededException, NotFoundException
@@ -224,7 +225,7 @@ class Watcher:
         self.events = events
 
     def request_json(self, url):
-        return self.request_url(url).json()
+        return self.request_url(url=url).json()
 
     def request_url(self, url):
         """Requests the given URL.
@@ -232,7 +233,7 @@ class Watcher:
         :returns: JSON response, if JSON
         """
         log.debug(f"URL: '{url}'.")
-        response = requests.get(url=url)
+        response = requests.get(url=url, timeout=5)
 
         status_code = response.status_code
         if status_code not in [200, 301, 302]:
@@ -246,6 +247,7 @@ class Watcher:
                 raise ValueError(
                     f"Status code '{status_code}' with '{response.text}'."
                 )
+
         return response
 
     def release_exists(self, release):
@@ -427,6 +429,8 @@ class GithubWatcher(Watcher):
             ApiRateLimitExceededException,
         ) as e:
             log.warning(e)
+        except (RequestException) as e:
+            log.error(f"Cannot get a response from {url}: {str(e)}")
 
         return None
 
@@ -438,8 +442,9 @@ class GithubWatcher(Watcher):
         :returns: most recent commit hash on given branch
         """
         endpoint = self.ENDPOINT_LATEST_COMMIT.format(branch=branch)
+        url = self.url.format(endpoint=endpoint)
         try:
-            response = self.request_json(self.url.format(endpoint=endpoint))
+            response = self.request_json(url=url)
             commit_hash = self.get_commit_hash(
                 response.get(self.KEY_COMMIT_NAME, None)
             )
@@ -452,6 +457,8 @@ class GithubWatcher(Watcher):
             ApiRateLimitExceededException,
         ) as e:
             log.warning(e)
+        except (RequestException) as e:
+            log.error(f"Cannot get a response from {url}: {str(e)}")
 
         return None
 
@@ -462,8 +469,9 @@ class GithubWatcher(Watcher):
         :returns: most recent tagand the according commit hash
         """
         endpoint = self.ENDPOINT_LATEST_TAG
+        url = self.url.format(endpoint=endpoint)
         try:
-            response = self.request_json(self.url.format(endpoint=endpoint))
+            response = self.request_json(url=url)
             tag_name = response[0].get(self.KEY_TAG_NAME, None)
             commit_hash = self.get_commit_hash(
                 response[0].get(self.KEY_COMMIT_NAME, None)
@@ -477,6 +485,8 @@ class GithubWatcher(Watcher):
             ApiRateLimitExceededException,
         ) as e:
             log.warning(e)
+        except (RequestException) as e:
+            log.error(f"Cannot get a response from {url}: {str(e)}")
 
         return None
 
