@@ -74,16 +74,18 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
 
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/sender", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_sender",
+            WithDecryption=True,
         )
         AWS_SES_SENDER = parameter["Parameter"]["Value"]
     except ClientError as e:
-        log.gwarning(e.response["Error"]["Code"])
+        log.warning(e.response["Error"]["Code"])
         AWS_SES_SENDER = ""
 
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/recipients", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_recipients",
+            WithDecryption=True,
         )
         AWS_SES_RECIPIENTS = parameter["Parameter"]["Value"]
     except ClientError as e:
@@ -92,7 +94,8 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
 
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/recipients_infra", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_recipients_infra",
+            WithDecryption=True,
         )
         AWS_SES_RECIPIENTS_INFRA = parameter["Parameter"]["Value"]
     except ClientError as e:
@@ -101,7 +104,8 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
 
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/recipients_sec", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_recipients_sec",
+            WithDecryption=True,
         )
         AWS_SES_RECIPIENTS_SEC = parameter["Parameter"]["Value"]
     except ClientError as e:
@@ -109,7 +113,8 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
         AWS_SES_RECIPIENTS_SEC = ""
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/recipients_dom", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_recipients_dom",
+            WithDecryption=True,
         )
         AWS_SES_RECIPIENTS_DOM = parameter["Parameter"]["Value"]
     except ClientError as e:
@@ -118,7 +123,8 @@ if "SERVERTYPE" in os.environ and os.environ["SERVERTYPE"] == "AWS Lambda":
 
     try:
         parameter = ssm_client.get_parameter(
-            Name="/github-watcher/recipients_g", WithDecryption=True
+            Name="/community.xmrto-dev/github_watcher_recipients_g",
+            WithDecryption=True,
         )
         AWS_SES_RECIPIENTS_G = parameter["Parameter"]["Value"]
     except ClientError as e:
