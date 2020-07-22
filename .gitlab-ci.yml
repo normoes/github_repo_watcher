@@ -1,18 +1,18 @@
 include:
   - project: 'general/common-gitlab-stages'
-    ref: v0.0.12
+    ref: v0.0.19
     file: '/.gitlab-ci-deploy_image.yml'
   - project: 'general/common-gitlab-stages'
-    ref: v0.0.12
+    ref: v0.0.19
     file: '/linter/.gitlab-ci-black.yml'
   - project: 'general/common-gitlab-stages'
-    ref: v0.0.12
+    ref: v0.0.19
     file: '/linter/.gitlab-ci-flake8.yml'
   - project: 'general/common-gitlab-stages'
-    ref: v0.0.12
+    ref: v0.0.19
     file: '/security/.gitlab-ci-python_audit.yml'
   - project: 'side-projects/infrastructure'
-    ref: 0.0.2
+    ref: 0.0.8
     file: '/gitlab_stages/environments/.gitlab-ci-environments.yml'
 
 stages:
@@ -68,9 +68,6 @@ pylint_duplicates_check:
 deploy_lambda_dev:
   extends:
     - .deploy_image
-    # - .common_env_vars
-    # - .common_db_env_vars
-    # - .common_cache_env_vars
   variables:
     AWS_REGION: $AWS_REGION_DEV
     GIT_DEPTH: 1
@@ -83,11 +80,7 @@ deploy_lambda_dev:
     - apk add --no-cache postgresql-libs gcc musl-dev postgresql-dev
     - pip install --no-cache-dir --upgrade -r build_requirements.txt
     - pip-sync requirements.txt --pip-args="--no-cache-dir"
-
-  # 'staging': non-critical Ireland
-  # 'develop': non-critical London
   script:
-    # - . venv/bin/activate
     - zappa update $ENV_NAME_DEV
 
   only:
@@ -96,9 +89,6 @@ deploy_lambda_dev:
 deploy_lambda_staging:
   extends:
     - .deploy_image
-    # - .common_env_vars
-    # - .common_db_env_vars
-    # - .common_cache_env_vars
   variables:
     AWS_REGION: $AWS_REGION_STAGING
     GIT_DEPTH: 1
@@ -111,11 +101,7 @@ deploy_lambda_staging:
     - apk add --no-cache postgresql-libs gcc musl-dev postgresql-dev
     - pip install --no-cache-dir --upgrade -r build_requirements.txt
     - pip-sync requirements.txt --pip-args="--no-cache-dir"
-
-  # 'staging': non-critical Ireland
-  # 'develop': non-critical London
   script:
-    # - . venv/bin/activate
     - zappa update $ENV_NAME_STAGING
 
   only:
