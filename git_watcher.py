@@ -500,12 +500,21 @@ def check_repos(event, context):
     # Trigger allowed for updates on github tags only.
     simple_email_trigger_tags = SimpleEmailHook(
         name="new_repository_tag",
-        host="email-smtp.eu-west-1.amazonaws.com",
+        host="email-smtp.eu-west-2.amazonaws.com",
         credentials=AWS_SES_CREDENTIALS,
         sender=AWS_SES_SENDER,
         sender_name="github-repo-watcher-simple",
         recipients=AWS_SES_RECIPIENTS,
         realms=(GITHUB_REALMS[GITHUB_TAG_REALM],),
+    )
+    simple_email_trigger_master_commits = SimpleEmailHook(
+        name="new_repository_master_commit",
+        host="email-smtp.eu-west-2.amazonaws.com",
+        credentials=AWS_SES_CREDENTIALS,
+        sender=AWS_SES_SENDER,
+        sender_name="github-repo-watcher-simple",
+        recipients=AWS_SES_RECIPIENTS,
+        realms=(GITHUB_REALMS[GITHUB_COMMIT_REALM],),
     )
     aws_ses_email_trigger_tags_infra = AwsSesEmailHook(
         name="new_repository_tag",
@@ -620,6 +629,7 @@ def check_repos(event, context):
                 monero_dockercloud_trigger_commits,
                 monero_dockercloud_trigger_tags,
                 simple_email_trigger_tags,
+                simple_email_trigger_master_commits,
                 aws_ses_email_trigger_tags_sec,
                 aws_ses_email_trigger_tags_dom,
                 aws_ses_email_trigger_tags_g,
