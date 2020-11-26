@@ -500,7 +500,7 @@ def check_repos(event, context):
     # Trigger allowed for updates on github tags only.
     simple_email_trigger_tags = SimpleEmailHook(
         name="new_repository_tag",
-        host="email-smtp.eu-west-2.amazonaws.com",
+        host="email-smtp.eu-west-1.amazonaws.com",
         credentials=AWS_SES_CREDENTIALS,
         sender=AWS_SES_SENDER,
         sender_name="github-repo-watcher-simple",
@@ -509,7 +509,7 @@ def check_repos(event, context):
     )
     simple_email_trigger_master_commits = SimpleEmailHook(
         name="new_repository_master_commit",
-        host="email-smtp.eu-west-2.amazonaws.com",
+        host="email-smtp.eu-west-1.amazonaws.com",
         credentials=AWS_SES_CREDENTIALS,
         sender=AWS_SES_SENDER,
         sender_name="github-repo-watcher-simple",
